@@ -3,640 +3,981 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>소프트웨어 개발자 세부 직업 탐색기</title>
-    <!-- Tailwind CSS 연동 -->
+    <title>웹 접근성 검사기 (A11y Inspector)</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome 아이콘 연동 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts 연동 -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Noto Sans KR', 'Inter', 'sans-serif'],
-                    },
                     colors: {
-                        primary: '#4f46e5', // Indigo-600
-                        secondary: '#0ea5e9', // Sky-500
-                        dark: '#1e293b', // Slate-800
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
                     }
                 }
             }
         }
     </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* 커스텀 스크롤바 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* 카드 호버 애니메이션 */
-        .job-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .job-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
-        
-        /* 모달 애니메이션 */
-        .modal-enter { opacity: 0; transform: scale(0.95); }
-        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
-        .modal-exit { opacity: 1; transform: scale(1); }
-        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 300ms, transform 300ms; }
-
-        /* 타임라인 점 애니메이션 */
-        .pulse-dot {
-            animation: pulse 2s infinite;
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
         }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* SVG Color Matrix Filters for Color Blindness */
+        .filter-protanopia { filter: url('#protanopia-filter'); }
+        .filter-deuteranopia { filter: url('#deuteranopia-filter'); }
+        .filter-tritanopia { filter: url('#tritanopia-filter'); }
+        .filter-achromatopsia { filter: url('#achromatopsia-filter'); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- 헤더 영역 -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center">
-            <div class="flex items-center gap-3 mb-4 sm:mb-0">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xl">
-                    <i class="fa-solid fa-code"></i>
+    <!-- SVG Filters for Color Blindness Simulation -->
+    <svg class="hidden" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="protanopia-filter">
+                <feColorMatrix type="matrix" values="0.567, 0.433, 0, 0, 0  0.558, 0.442, 0, 0, 0  0, 0.242, 0.758, 0, 0  0, 0, 0, 1, 0"/>
+            </filter>
+            <filter id="deuteranopia-filter">
+                <feColorMatrix type="matrix" values="0.625, 0.375, 0, 0, 0  0.7, 0.3, 0, 0, 0  0, 0.3, 0.7, 0, 0  0, 0, 0, 1, 0"/>
+            </filter>
+            <filter id="tritanopia-filter">
+                <feColorMatrix type="matrix" values="0.95, 0.05, 0, 0, 0  0, 0.433, 0.567, 0, 0  0, 0.475, 0.525, 0, 0  0, 0, 0, 1, 0"/>
+            </filter>
+            <filter id="achromatopsia-filter">
+                <feColorMatrix type="matrix" values="0.299, 0.587, 0.114, 0, 0  0.299, 0.587, 0.114, 0, 0  0.299, 0.587, 0.114, 0, 0  0, 0, 0, 1, 0"/>
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-primary-600 p-2 rounded-lg">
+                    <i data-lucide="eye" class="w-6 h-6 text-white"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-dark">SW 개발자 진로 탐색</h1>
-                    <p class="text-xs text-slate-500">고등학생을 위한 맞춤형 직업 설계</p>
+                    <h1 class="font-bold text-lg leading-none">A11y Inspector</h1>
+                    <p class="text-xs text-slate-400 mt-0.5">웹 접근성 진단 및 개선 가이드</p>
                 </div>
             </div>
-            <!-- 네비게이션 탭 -->
-            <nav class="flex space-x-1 bg-slate-100 p-1 rounded-lg">
-                <button onclick="switchTab('explore')" id="tab-explore" class="tab-btn px-4 py-2 text-sm font-medium rounded-md bg-white text-primary shadow-sm transition-all">탐색하기</button>
-                <button onclick="switchTab('compare')" id="tab-compare" class="tab-btn px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 transition-all">비교하기</button>
-                <button onclick="switchTab('roadmap')" id="tab-roadmap" class="tab-btn px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 transition-all">진로 로드맵</button>
+            
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 sm:space-x-2 bg-slate-800 p-1 rounded-xl text-xs sm:text-sm font-medium">
+                <button onclick="switchTab('code-audit')" id="tab-code-audit" class="tab-btn px-3 py-1.5 rounded-lg text-white bg-primary-600 transition flex items-center gap-1.5">
+                    <i data-lucide="code-2" class="w-4 h-4"></i>
+                    <span>HTML 진단</span>
+                </button>
+                <button onclick="switchTab('contrast-calc')" id="tab-contrast-calc" class="tab-btn px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5">
+                    <i data-lucide="palette" class="w-4 h-4"></i>
+                    <span>색상 대비 계산기</span>
+                </button>
+                <button onclick="switchTab('simulator')" id="tab-simulator" class="tab-btn px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4"></i>
+                    <span>시각 시뮬레이터 & 체크리스트</span>
+                </button>
             </nav>
         </div>
     </header>
 
-    <!-- 메인 컨텐츠 영역 -->
-    <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        
-        <!-- [탭 1] 직업 탐색 -->
-        <section id="section-explore" class="block animate-fade-in">
-            <div class="mb-8 text-center sm:text-left">
-                <h2 class="text-2xl font-bold text-slate-900">세부 직업 탐색</h2>
-                <p class="text-slate-600 mt-2">관심 있는 카드를 클릭하여 상세 정보와 생기부 연계 팁을 확인하세요.</p>
-            </div>
-            <!-- 카드 그리드 -->
-            <div id="job-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- JS로 카드 동적 생성 -->
-            </div>
-        </section>
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        <!-- [탭 2] 직업 비교 -->
-        <section id="section-compare" class="hidden">
-            <div class="mb-8 text-center sm:text-left">
-                <h2 class="text-2xl font-bold text-slate-900">직무 및 역량 비교</h2>
-                <p class="text-slate-600 mt-2">두 개의 직업을 선택하여 공통점과 차이점을 분석해보세요.</p>
-            </div>
-            
-            <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
-                <!-- 선택 영역 -->
-                <div class="flex flex-col md:flex-row gap-4 mb-8">
-                    <div class="flex-1">
-                        <label class="block text-sm font-medium text-slate-700 mb-2">직업 A 선택</label>
-                        <select id="compare-select-1" onchange="renderComparison()" class="w-full border border-slate-300 rounded-lg py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
-                            <!-- JS로 옵션 동적 생성 -->
-                        </select>
-                    </div>
-                    <div class="flex items-center justify-center pt-6">
-                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                            <i class="fa-solid fa-code-compare"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1">
-                        <label class="block text-sm font-medium text-slate-700 mb-2">직업 B 선택</label>
-                        <select id="compare-select-2" onchange="renderComparison()" class="w-full border border-slate-300 rounded-lg py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
-                            <!-- JS로 옵션 동적 생성 -->
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 비교 결과 영역 -->
-                <div id="compare-result" class="hidden flex-col gap-6">
-                    <!-- 공통점 -->
-                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-5">
-                        <h3 class="text-lg font-bold text-indigo-900 flex items-center gap-2 mb-3">
-                            <i class="fa-solid fa-handshake text-primary"></i> 핵심 공통점
-                        </h3>
-                        <p id="compare-common" class="text-indigo-800 text-sm leading-relaxed"></p>
-                    </div>
-                    <!-- 차이점 표 -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-                        <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 transform -translate-x-1/2"></div>
-                        <!-- A 상세 -->
-                        <div>
-                            <h4 id="compare-title-1" class="text-xl font-bold text-slate-900 mb-4 text-center md:text-left text-primary"></h4>
-                            <div class="space-y-4">
-                                <div>
-                                    <span class="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded mb-1">주요 직무 차이</span>
-                                    <p id="compare-duty-1" class="text-sm text-slate-700"></p>
-                                </div>
-                                <div>
-                                    <span class="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded mb-1">필요 역량/기술</span>
-                                    <div id="compare-skills-1" class="flex flex-wrap gap-1 mt-1"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- B 상세 -->
-                        <div>
-                            <h4 id="compare-title-2" class="text-xl font-bold text-slate-900 mb-4 text-center md:text-left text-secondary"></h4>
-                            <div class="space-y-4">
-                                <div>
-                                    <span class="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded mb-1">주요 직무 차이</span>
-                                    <p id="compare-duty-2" class="text-sm text-slate-700"></p>
-                                </div>
-                                <div>
-                                    <span class="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded mb-1">필요 역량/기술</span>
-                                    <div id="compare-skills-2" class="flex flex-wrap gap-1 mt-1"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- 경고 메시지 (같은 직업 선택시) -->
-                <div id="compare-warning" class="text-center py-10 text-slate-500 hidden">
-                    <i class="fa-solid fa-circle-exclamation text-3xl mb-3 text-slate-300"></i>
-                    <p>서로 다른 두 직업을 선택해주세요.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- [탭 3] 진로 로드맵 -->
-        <section id="section-roadmap" class="hidden">
-            <div class="mb-8 text-center sm:text-left flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <!-- ================= TAB 1: HTML CODE AUDITOR ================= -->
+        <section id="sec-code-audit" class="space-y-6">
+            <!-- Top Controls & Info -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-900">진로 준비 로드맵</h2>
-                    <p class="text-slate-600 mt-2">고교 3년 및 대학 진학까지의 가이드라인을 확인하세요.</p>
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="file-search" class="text-primary-600"></i>
+                        HTML 웹 접근성 코드 진단
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">
+                        HTML 코드를 입력하거나 샘플을 선택하여 대체 텍스트(alt), 폼 레이블, 링크/버튼 명확성 등을 자동 검사하세요.
+                    </p>
                 </div>
-                <div class="w-full sm:w-64">
-                    <select id="roadmap-select" onchange="renderRoadmap()" class="w-full border border-slate-300 rounded-lg py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm bg-white font-medium text-primary">
-                        <!-- JS로 옵션 동적 생성 -->
+                <div class="flex items-center gap-2">
+                    <label for="sample-select" class="text-xs font-semibold text-slate-600 whitespace-nowrap">샘플 코드:</label>
+                    <select id="sample-select" onchange="loadSampleCode(this.value)" class="text-sm bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none">
+                        <option value="flawed">문제가 많은 HTML 샘플</option>
+                        <option value="good">접근성이 준수된 올바른 샘플</option>
+                        <option value="empty">빈 입력창</option>
                     </select>
                 </div>
             </div>
 
-            <!-- 인포그래픽 타임라인 -->
-            <div class="bg-white rounded-2xl shadow-sm p-6 sm:p-10 border border-slate-200">
-                <div class="max-w-3xl mx-auto relative">
-                    <!-- 수직선 -->
-                    <div class="absolute left-[19px] sm:left-1/2 top-2 bottom-2 w-1 bg-slate-100 transform sm:-translate-x-1/2 rounded-full"></div>
-                    
-                    <div id="roadmap-container" class="space-y-12">
-                        <!-- JS로 타임라인 노드 동적 생성 -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Editor Input Panel (5 Cols) -->
+                <div class="lg:col-span-5 flex flex-col space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label for="code-input" class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            <i data-lucide="code" class="w-4 h-4 text-slate-500"></i> HTML 코드 입력
+                        </label>
+                        <button onclick="runCodeAudit()" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                            <span>검사 실행하기</span>
+                        </button>
+                    </div>
+                    <div class="relative flex-grow min-h-[380px]">
+                        <textarea id="code-input" class="w-full h-full min-h-[380px] p-4 font-mono text-sm bg-slate-900 text-slate-100 rounded-xl border border-slate-700 focus:ring-2 focus:ring-primary-500 focus:outline-none resize-y" placeholder="여기에 HTML 코드를 붙여넣으세요..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Diagnostics Output Panel (7 Cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <!-- Summary Card -->
+                    <div id="audit-summary-card" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">접근성 점수</div>
+                            <div id="score-val" class="text-2xl font-bold text-slate-800 mt-1">--</div>
+                        </div>
+                        <div class="p-3 bg-red-50 rounded-xl border border-red-100">
+                            <div class="text-xs font-semibold text-red-600 uppercase tracking-wider">오류 (Critical)</div>
+                            <div id="error-count" class="text-2xl font-bold text-red-700 mt-1">0</div>
+                        </div>
+                        <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                            <div class="text-xs font-semibold text-amber-600 uppercase tracking-wider">경고 (Warning)</div>
+                            <div id="warning-count" class="text-2xl font-bold text-amber-700 mt-1">0</div>
+                        </div>
+                        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">통과 항목</div>
+                            <div id="pass-count" class="text-2xl font-bold text-emerald-700 mt-1">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200 text-xs">
+                        <span class="font-semibold text-slate-600">진단 결과 Filter:</span>
+                        <div class="flex space-x-1">
+                            <button onclick="filterAuditResults('all')" id="filter-btn-all" class="px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium">전체보기</button>
+                            <button onclick="filterAuditResults('error')" id="filter-btn-error" class="px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">오류만</button>
+                            <button onclick="filterAuditResults('warning')" id="filter-btn-warning" class="px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">경고만</button>
+                            <button onclick="filterAuditResults('pass')" id="filter-btn-pass" class="px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">통과만</button>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Results List -->
+                    <div id="audit-results-list" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                        <!-- Dynamic Result Cards injected here -->
                     </div>
                 </div>
             </div>
         </section>
-    </main>
 
-    <!-- 직업 상세 정보 모달 -->
-    <div id="job-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto">
-            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <div id="modal-panel" class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl modal-enter">
-                    <!-- 닫기 버튼 -->
-                    <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors z-10">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                    
-                    <!-- 모달 헤더 (배경) -->
-                    <div id="modal-header-bg" class="h-24 sm:h-32 bg-gradient-to-r from-primary to-secondary w-full relative">
-                        <div class="absolute -bottom-10 left-6">
-                            <div id="modal-icon-container" class="w-20 h-20 bg-white rounded-2xl shadow-md flex items-center justify-center text-3xl border-4 border-white">
-                                <!-- Icon -->
-                            </div>
+
+        <!-- ================= TAB 2: COLOR CONTRAST CALCULATOR ================= -->
+        <section id="sec-contrast-calc" class="hidden space-y-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="contrast" class="text-primary-600"></i>
+                    텍스트 및 배경 색상 대비 계산기 (WCAG 2.1 기준)
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">
+                    시력이 낮은 사용자도 글자를 쉽게 읽을 수 있도록 텍스트와 배경 사이의 명암비를 실시간 검사합니다. (일반 텍스트 4.5:1 이상 추천)
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Color Controls Panel (5 Cols) -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <!-- Text Color Picker -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center justify-between">
+                            <span>글자 색상 (Text Color)</span>
+                            <span id="fg-hex-display" class="font-mono text-xs text-slate-500">#0F172A</span>
+                        </label>
+                        <div class="flex items-center gap-3">
+                            <input type="color" id="fg-color-picker" value="#0f172a" oninput="updateContrastCalc()" class="w-12 h-12 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white">
+                            <input type="text" id="fg-hex-input" value="#0F172A" onchange="syncColorInput('fg', this.value)" class="flex-grow font-mono text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none uppercase">
+                            <button onclick="swapColors()" title="색상 반전" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition">
+                                <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- 모달 내용 -->
-                    <div class="px-6 pt-14 pb-8">
-                        <h3 id="modal-title" class="text-2xl font-bold text-slate-900 mb-1">직업명</h3>
-                        <p id="modal-desc" class="text-slate-500 text-sm mb-6 pb-6 border-b border-slate-100">한줄 설명</p>
+                    <!-- Background Color Picker -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center justify-between">
+                            <span>배경 색상 (Background Color)</span>
+                            <span id="bg-hex-display" class="font-mono text-xs text-slate-500">#FFFFFF</span>
+                        </label>
+                        <div class="flex items-center gap-3">
+                            <input type="color" id="bg-color-picker" value="#ffffff" oninput="updateContrastCalc()" class="w-12 h-12 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white">
+                            <input type="text" id="bg-hex-input" value="#FFFFFF" onchange="syncColorInput('bg', this.value)" class="flex-grow font-mono text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none uppercase">
+                        </div>
+                    </div>
 
-                        <div class="space-y-6">
-                            <!-- 직무 및 실무 사례 -->
-                            <div>
-                                <h4 class="flex items-center gap-2 text-md font-bold text-slate-800 mb-2">
-                                    <i class="fa-solid fa-briefcase text-primary"></i> 직무 및 실무 사례
-                                </h4>
-                                <div class="bg-slate-50 p-4 rounded-lg text-sm text-slate-700 leading-relaxed border border-slate-100">
-                                    <p id="modal-duties" class="mb-2 font-medium"></p>
-                                    <div class="flex gap-2 items-start text-primary bg-indigo-50/50 p-3 rounded border border-indigo-100/50 mt-2">
-                                        <i class="fa-solid fa-lightbulb mt-1"></i>
-                                        <p id="modal-example"><strong>실무 사례:</strong> </p>
-                                    </div>
+                    <!-- Preset Palette Suggestions -->
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-500 mb-2">자주 쓰는 고대비 색상 조합 추천</span>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <button onclick="applyColorPreset('#000000', '#FFFFFF')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between">
+                                <span>기본 흑백</span>
+                                <span class="inline-block w-4 h-4 rounded-full border" style="background: white; border-color: black;"></span>
+                            </button>
+                            <button onclick="applyColorPreset('#FFFFFF', '#1E293B')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between bg-slate-900 text-white">
+                                <span>다크 모드</span>
+                                <span class="inline-block w-4 h-4 rounded-full border border-white" style="background: #1e293b;"></span>
+                            </button>
+                            <button onclick="applyColorPreset('#1E3A8A', '#EFF6FF')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between bg-blue-50 text-blue-900">
+                                <span>블루 톤</span>
+                                <span class="inline-block w-4 h-4 rounded-full" style="background: #eff6ff; border: 1px solid #1e3a8a"></span>
+                            </button>
+                            <button onclick="applyColorPreset('#78350F', '#FEF3C7')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between bg-amber-50 text-amber-900">
+                                <span>웜 경고 톤</span>
+                                <span class="inline-block w-4 h-4 rounded-full" style="background: #fef3c7; border: 1px solid #78350f"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview & WCAG Evaluation Panel (7 Cols) -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Ratio Badge Box -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">계산된 명암비 (Contrast Ratio)</span>
+                            <div id="contrast-ratio-text" class="text-4xl font-extrabold text-slate-900 mt-1">
+                                21.00 : 1
+                            </div>
+                        </div>
+                        <div id="ratio-verdict-badge" class="px-4 py-2 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1.5">
+                            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                            <span>매우 우수 (AAA 통과)</span>
+                        </div>
+                    </div>
+
+                    <!-- Live Card Preview -->
+                    <div id="contrast-preview-box" class="p-8 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 flex flex-col justify-between min-h-[200px]" style="background-color: #ffffff; color: #0f172a;">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-2">실시간 글자 가독성 테스트</h3>
+                            <p class="text-base leading-relaxed">
+                                저시력 사용자나 야외 직사광선 아래의 모바일 기기 사용자도 이 텍스트를 또렷하게 구분하여 읽을 수 있어야 합니다.
+                            </p>
+                        </div>
+                        <div class="mt-6 flex flex-wrap items-center gap-3 text-xs font-semibold">
+                            <span class="px-3 py-1.5 rounded-lg border border-current opacity-80">일반 텍스트 (16px)</span>
+                            <span class="px-3 py-1.5 rounded-lg border border-current font-bold text-lg">큰 텍스트 (24px)</span>
+                            <button class="px-4 py-2 rounded-lg bg-current font-semibold opacity-90 transition hover:opacity-100">
+                                <span class="mix-blend-difference text-white">버튼 요소를 시뮬레이션</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- WCAG 2.1 Pass/Fail Matrix -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <h4 class="font-bold text-slate-900 text-sm mb-4">WCAG 2.1 접근성 준수 표준 평가</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- AA Standard -->
+                            <div class="border border-slate-200 rounded-xl p-4 space-y-3">
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="font-bold text-slate-800 text-sm">AA 등급 (최저 권장)</span>
+                                    <span class="text-xs text-slate-500">기본 웹 표준</span>
+                                </div>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-slate-600">일반 텍스트 (최소 4.5:1)</span>
+                                    <span id="badge-aa-normal" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
+                                </div>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-slate-600">큰 텍스트 (최소 3.0:1)</span>
+                                    <span id="badge-aa-large" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
                                 </div>
                             </div>
 
-                            <!-- 전공 및 선택과목 (반반 분할) -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <h4 class="flex items-center gap-2 text-md font-bold text-slate-800 mb-2">
-                                        <i class="fa-solid fa-graduation-cap text-secondary"></i> 관련 전공(학과)
-                                    </h4>
-                                    <div class="bg-slate-50 p-3 rounded-lg text-sm text-slate-700 border border-slate-100 h-full">
-                                        <ul id="modal-majors" class="list-disc pl-5 space-y-1"></ul>
-                                    </div>
+                            <!-- AAA Standard -->
+                            <div class="border border-slate-200 rounded-xl p-4 space-y-3">
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="font-bold text-slate-800 text-sm">AAA 등급 (최고 권장)</span>
+                                    <span class="text-xs text-slate-500">고대비 우수 표준</span>
                                 </div>
-                                <div>
-                                    <h4 class="flex items-center gap-2 text-md font-bold text-slate-800 mb-2">
-                                        <i class="fa-solid fa-book-open text-amber-500"></i> 고교 추천 선택과목
-                                    </h4>
-                                    <div class="bg-slate-50 p-3 rounded-lg text-sm text-slate-700 border border-slate-100 h-full flex flex-wrap gap-2 content-start" id="modal-electives">
-                                        <!-- 과목 태그들 -->
-                                    </div>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-slate-600">일반 텍스트 (최소 7.0:1)</span>
+                                    <span id="badge-aaa-normal" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
                                 </div>
-                            </div>
-
-                            <!-- 필요 역량 -->
-                            <div>
-                                <h4 class="flex items-center gap-2 text-md font-bold text-slate-800 mb-2">
-                                    <i class="fa-solid fa-star text-rose-500"></i> 필요 역량 및 기술
-                                </h4>
-                                <div id="modal-skills" class="flex flex-wrap gap-2">
-                                    <!-- 기술 태그들 -->
-                                </div>
-                            </div>
-
-                            <!-- 생기부 연계 탐구 프로젝트 -->
-                            <div>
-                                <h4 class="flex items-center gap-2 text-md font-bold text-slate-800 mb-2">
-                                    <i class="fa-solid fa-microscope text-emerald-500"></i> 생기부 연계 탐구 프로젝트 (세특 아이디어)
-                                </h4>
-                                <div class="bg-emerald-50 p-4 rounded-lg text-sm text-emerald-900 border border-emerald-100">
-                                    <strong class="block mb-1">주제 제안:</strong>
-                                    <p id="modal-project" class="italic"></p>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-slate-600">큰 텍스트 (최소 4.5:1)</span>
+                                    <span id="badge-aaa-large" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <script>
-        // === 1. 직업 데이터 세트 ===
-        const jobData = {
-            frontend: {
-                id: 'frontend',
-                title: '프론트엔드 개발자',
-                desc: '사용자가 직접 보고 상호작용하는 웹/앱의 시각적, 동작 요소를 개발합니다.',
-                icon: 'fa-desktop',
-                theme: 'from-blue-500 to-cyan-500',
-                iconColor: 'text-blue-500',
-                duties: '디자이너가 기획한 UI(사용자 인터페이스)를 웹 브라우저나 앱 환경에 맞게 코드로 구현하며, 사용자의 클릭이나 스크롤 같은 이벤트를 처리하여 UX(사용자 경험)를 향상시킵니다.',
-                example: '쇼핑몰에서 상품을 장바구니에 담을 때 나타나는 애니메이션 효과 구현 및 반응형 웹(모바일/PC 화면 맞춤) 제작',
-                majors: ['컴퓨터공학과', '소프트웨어학과', '멀티미디어학과', '웹디자인학과'],
-                electives: ['정보', '프로그래밍', '미적분', '확률과 통계'],
-                skills: ['HTML/CSS/JS', 'React/Vue', 'UI/UX 이해도', '미적 감각 및 꼼꼼함', '커뮤니케이션'],
-                project: '시각장애인을 위한 학교 홈페이지의 웹 접근성(Web Accessibility) 평가 및 개선 방안 탐구 (정보/국어 교과 연계)',
-                roadmap: [
-                    { period: '고1', title: '기본기 및 흥미 탐색', desc: '코딩 동아리 가입. 파이썬이나 C언어 등을 통해 프로그래밍의 기본 논리를 학습하고, 기초 알고리즘 문제를 풀어봅니다.' },
-                    { period: '고2', title: '웹 기초 기술 습득', desc: 'HTML, CSS, JavaScript의 기초를 학습합니다. 학급 시간표나 D-day 계산기 등 간단한 정적 웹페이지를 직접 만들어 봅니다.' },
-                    { period: '고3', title: '프로젝트 및 포트폴리오', desc: 'React 등 프레임워크 기초를 맛보며, 동아리 홈페이지나 진로 관련 웹앱을 기획·제작하여 세특 및 포트폴리오로 활용합니다.' },
-                    { period: '대학/이후', title: '전문성 심화 및 오픈소스', desc: '관련 학과 진학 후 자료구조, 운영체제를 배우며 웹 성능 최적화, 최신 프론트엔드 트렌드를 익히고 오픈소스 프로젝트에 참여합니다.' }
-                ]
-            },
-            backend: {
-                id: 'backend',
-                title: '백엔드 개발자',
-                desc: '눈에 보이지 않는 서버, 데이터베이스, API 등 시스템의 핵심 로직을 구축합니다.',
-                icon: 'fa-server',
-                theme: 'from-emerald-500 to-teal-500',
-                iconColor: 'text-emerald-500',
-                duties: '사용자 정보 저장, 결제 처리, 데이터 검색 등 웹/앱의 이면에서 작동하는 서버 로직과 데이터베이스 구조를 설계하고 개발합니다. 대규모 트래픽을 안정적으로 처리하는 것이 중요합니다.',
-                example: '수만 명의 학생이 동시에 접속하는 수강신청 시스템에서 서버가 다운되지 않도록 대기열 시스템 및 트래픽 분산 로직 구현',
-                majors: ['컴퓨터공학과', '소프트웨어학과', '정보통신공학과'],
-                electives: ['수학Ⅰ·Ⅱ', '미적분', '정보', '인공지능 수학'],
-                skills: ['Java/Python/Node.js', '데이터베이스(SQL)', '네트워크 지식', '논리적 사고', '문제 해결력'],
-                project: '학교 식당 식단표 및 알레르기 정보를 효율적으로 분류하고 검색하기 위한 관계형 데이터베이스 구조(ERD) 설계 탐구',
-                roadmap: [
-                    { period: '고1', title: '논리적 사고력 배양', desc: '수학 과목에 충실하며 논리력을 키웁니다. 파이썬 등 다루기 쉬운 언어로 변수, 조건문, 반복문 등 코딩의 기초를 다집니다.' },
-                    { period: '고2', title: '알고리즘 및 데이터 기초', desc: '자료구조(배열, 스택, 큐)의 개념을 공부하고, 간단한 콘솔 기반의 학생 성적 관리 프로그램 등을 만들어봅니다.' },
-                    { period: '고3', title: '서버-클라이언트 구조 이해', desc: 'API의 개념을 학습하고, 파이썬 Flask나 Node.js를 이용해 간단한 데이터 응답을 주는 로컬 서버를 구축해보는 프로젝트를 진행합니다.' },
-                    { period: '대학/이후', title: '아키텍처 및 대규모 시스템', desc: '운영체제, 네트워크, 데이터베이스를 깊이 있게 학습합니다. 클라우드(AWS) 환경에서 서비스 배포 및 성능 최적화 경험을 쌓습니다.' }
-                ]
-            },
-            ai: {
-                id: 'ai',
-                title: '인공지능(AI) 엔지니어',
-                desc: '데이터를 학습하여 스스로 판단하고 예측하는 기계학습 모델을 개발합니다.',
-                icon: 'fa-brain',
-                theme: 'from-purple-500 to-pink-500',
-                iconColor: 'text-purple-500',
-                duties: '주어진 방대한 데이터를 전처리하고, 목적에 맞는 머신러닝/딥러닝 알고리즘을 선택·설계하여 AI 모델을 학습시킵니다. 이후 성능을 평가하고 튜닝합니다.',
-                example: '학생들의 과거 성적 및 학습 패턴 데이터를 분석하여, 취약한 유형의 문제를 자동으로 추천해주는 맞춤형 학습 알고리즘 개발',
-                majors: ['인공지능학과', '데이터사이언스학과', '컴퓨터공학과', '통계학과'],
-                electives: ['미적분', '기하', '확률과 통계', '인공지능 기초', '정보'],
-                skills: ['Python', '수학/통계 역량', 'TensorFlow/PyTorch', '분석적 사고', '호기심'],
-                project: '공공데이터를 활용한 우리 동네 미세먼지 농도 변화 추이 분석 및 수학적 모델링을 통한 예측 모델 설계 (수학/정보 연계)',
-                roadmap: [
-                    { period: '고1', title: '수학적 기초 공사', desc: '수학(특히 함수, 확률)에 집중합니다. 파이썬 문법을 익히고, 공공데이터 포털에서 csv 데이터를 다운받아 읽어보는 연습을 합니다.' },
-                    { period: '고2', title: '데이터 분석 맛보기', desc: '확률과 통계 과목과 연계하여 Pandas, Matplotlib 등을 활용해 데이터를 시각화하고 통계적으로 분석하는 미니 프로젝트를 수행합니다.' },
-                    { period: '고3', title: '기초 머신러닝 경험', desc: '인공지능 기초 과목을 수강하거나 독학하여 선형회귀, 분류 알고리즘의 원리를 이해합니다. Teachable Machine 등을 활용해 시각적 모델을 만들어봅니다.' },
-                    { period: '대학/이후', title: '심층 논문 및 딥러닝', desc: '선형대수학, 미적분학을 심화 학습하고 논문을 읽으며 자연어처리(NLP)나 컴퓨터비전(CV) 분야의 전문 모델을 연구 및 개발합니다.' }
-                ]
-            },
-            security: {
-                id: 'security',
-                title: '정보보안 전문가 (화이트해커)',
-                desc: '해킹 위협으로부터 네트워크와 시스템을 보호하고 취약점을 방어합니다.',
-                icon: 'fa-shield-halved',
-                theme: 'from-slate-700 to-slate-900',
-                iconColor: 'text-slate-700',
-                duties: '시스템이나 웹사이트의 보안 취약점을 미리 찾아내어(모의 해킹) 방어책을 마련하고, 악성코드 분석 및 해킹 공격 발생 시 원인을 추적(포렌식)하여 복구합니다.',
-                example: '학교 홈페이지의 로그인 시스템에 SQL 인젝션 등의 해킹 기법이 통하는지 모의 테스트하고, 안전한 암호화 알고리즘으로 보안 패치 적용',
-                majors: ['정보보안학과', '사이버국방학과', '컴퓨터공학과'],
-                electives: ['정보', '프로그래밍', '물리학Ⅰ', '윤리와 사상'],
-                skills: ['네트워크/OS 구조', 'C/Python', '암호학 기초', '직업윤리', '끈기'],
-                project: '고대 암호(시저 암호 등)부터 현대 RSA 공개키 암호체계까지의 수학적 원리 탐구 및 직접 암호화 프로그램 구현 (수학/역사 연계)',
-                roadmap: [
-                    { period: '고1', title: '컴퓨터 구조 이해 및 윤리', desc: '컴퓨터가 어떻게 작동하는지(OS, 하드웨어) 기초 개념을 잡습니다. 윤리 과목을 통해 보안 전문가로서의 윤리 의식을 함양합니다.' },
-                    { period: '고2', title: '네트워크 및 시스템 기초', desc: '리눅스(Linux) 운영체제 사용법을 익히고, 웹 통신이 어떻게 이루어지는지(HTTP 등) 네트워크 기초를 학습합니다.' },
-                    { period: '고3', title: '모의 해킹 기초 및 암호학', desc: 'Webhacking.kr 같은 합법적인 워게임(Wargame) 사이트에서 기초 웹 취약점 문제를 풀어보며 방어의 원리를 이해합니다.' },
-                    { period: '대학/이후', title: '전문 포렌식 및 시스템 보안', desc: '리버스 엔지니어링, 디지털 포렌식, 시스템 해킹 방어 등 심화 전공을 학습하며 KISA(인터넷진흥원) 등 주요 보안 프로젝트에 참여합니다.' }
-                ]
-            },
-            game: {
-                id: 'game',
-                title: '게임 개발자',
-                desc: '기획과 그래픽을 바탕으로 게임 엔진을 활용해 실제 플레이 가능한 게임을 만듭니다.',
-                icon: 'fa-gamepad',
-                theme: 'from-orange-500 to-rose-500',
-                iconColor: 'text-orange-500',
-                duties: '캐릭터의 움직임, 물리 법칙(중력, 충돌), 인공지능(적의 움직임), 그래픽 렌더링 등을 프로그래밍합니다. Unity나 Unreal 같은 게임 엔진을 주로 다룹니다.',
-                example: '플레이어가 점프할 때의 중력 가속도 물리 연산 구현 및 적 NPC가 플레이어를 인식하고 추적하는 길찾기(A* 알고리즘) 적용',
-                majors: ['게임공학과', '컴퓨터공학과', '멀티미디어학과'],
-                electives: ['물리학Ⅰ·Ⅱ', '기하', '정보', '미술'],
-                skills: ['C#/C++', '게임 엔진(Unity 등)', '물리/수학 지식', '창의력', '협업 능력'],
-                project: '물리학 교과의 "포물선 운동"과 "마찰력" 원리를 적용한 2D 미니 물리 시뮬레이션 게임 제작 (물리/정보 연계)',
-                roadmap: [
-                    { period: '고1', title: '기초 코딩 및 물리/수학', desc: 'C언어나 C#의 기초 문법을 익히고, 학교의 물리, 수학(기하) 과목을 통해 공간과 운동에 대한 이해도를 높입니다.' },
-                    { period: '고2', title: '엔진 입문 및 미니 게임', desc: 'Unity 엔진과 C#을 독학하여, 벽돌 깨기나 간단한 2D 플랫포머(마리오 같은) 게임의 프로토타입을 만들어 봅니다.' },
-                    { period: '고3', title: '협업 프로젝트 진행', desc: '그림이나 기획에 관심 있는 친구들과 팀을 꾸려 기획-아트-개발이 합쳐진 완성된 단편 게임을 제작해보고 포트폴리오로 정리합니다.' },
-                    { period: '대학/이후', title: '3D 그래픽스 및 최적화', desc: 'C++ 심화, 3D 그래픽스 수학, 컴퓨터 그래픽스 파이프라인을 배우며 Unreal 엔진 기반의 고퀄리티 게임이나 최적화 기법을 연구합니다.' }
-                ]
-            },
-            data: {
-                id: 'data',
-                title: '데이터 과학자 (Data Scientist)',
-                desc: '빅데이터 속에서 유의미한 인사이트를 추출하여 비즈니스 의사결정을 돕습니다.',
-                icon: 'fa-chart-pie',
-                theme: 'from-amber-400 to-orange-500',
-                iconColor: 'text-amber-500',
-                duties: '정제되지 않은 데이터를 수집 및 가공하고, 통계 모델링과 머신러닝을 활용하여 데이터를 분석한 뒤 결과를 시각화하여 보고합니다.',
-                example: '전국 고등학교 도서관 대출 목록 수십만 건을 분석하여 연령별/지역별 독서 트렌드를 도출하고 시각화 대시보드 제작',
-                majors: ['데이터사이언스학과', '통계학과', '응용수학과', '산업공학과'],
-                electives: ['확률과 통계', '경제', '사회·문화', '정보'],
-                skills: ['Python/R', '통계학', 'SQL', '비즈니스 이해력', '설득력 있는 소통'],
-                project: '통계청 공공데이터를 활용한 청소년 수면 시간과 학업 성취도의 상관관계 분석 및 사회적 시사점 도출 (수학/사회 연계)',
-                roadmap: [
-                    { period: '고1', title: '사회 현상 관심 및 기초 수학', desc: '사회/경제 현상에 관심을 가지며 데이터를 바라보는 시각을 기릅니다. 수학 과목의 기초를 탄탄히 다집니다.' },
-                    { period: '고2', title: '통계 기초 및 파이썬', desc: '확률과 통계 수업에서 배운 평균, 분산, 상관관계 등의 개념을 파이썬 코드로 직접 구해보며 이론을 코딩으로 확인합니다.' },
-                    { period: '고3', title: '실생활 데이터 분석', desc: '학교 매점의 판매 데이터나 설문조사 데이터를 수집하여, 가설을 세우고 이를 증명하는 데이터 리포트 형태의 소논문/탐구보고서를 작성합니다.' },
-                    { period: '대학/이후', title: '빅데이터 처리 및 고급 통계', desc: 'Hadoop, Spark 같은 빅데이터 처리 기술을 배우고, 다변량 통계, 시계열 분석 등 고급 통계 기법을 비즈니스 문제 해결에 적용합니다.' }
-                ]
-            }
-        };
 
-        // === 2. 초기화 및 UI 렌더링 ===
-        document.addEventListener('DOMContentLoaded', () => {
-            renderJobCards();
-            populateSelectBoxes();
-            renderRoadmap(); // 초기 로드맵 설정 (첫번째 직업)
-        });
+        <!-- ================= TAB 3: VISUAL SIMULATOR & CHECKLIST ================= -->
+        <section id="sec-simulator" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Color Blindness Simulator (6 Cols) -->
+                <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="eye-off" class="text-primary-600"></i>
+                            색각 이상(색맹/색약) 시뮬레이터
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">
+                            다양한 시각 특성을 가진 사용자가 UI 레이아웃 및 색상 정보를 어떻게 인식하는지 체험해보세요.
+                        </p>
+                    </div>
 
-        // 탭 전환 기능
-        function switchTab(tabId) {
-            // 버튼 스타일 초기화
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('bg-white', 'text-primary', 'shadow-sm');
-                btn.classList.add('text-slate-600');
-            });
-            
-            // 선택된 버튼 스타일 적용
-            const activeBtn = document.getElementById(`tab-${tabId}`);
-            activeBtn.classList.remove('text-slate-600');
-            activeBtn.classList.add('bg-white', 'text-primary', 'shadow-sm');
+                    <!-- Simulator Controls -->
+                    <div class="flex items-center gap-3">
+                        <label for="vision-filter-select" class="text-xs font-semibold text-slate-600">시각 유형 선택:</label>
+                        <select id="vision-filter-select" onchange="applyVisionFilter(this.value)" class="text-sm bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none flex-grow">
+                            <option value="none">일반 시각 (정상)</option>
+                            <option value="protanopia">제1 색각 이상 (적색맹 / Protanopia)</option>
+                            <option value="deuteranopia">제2 색각 이상 (녹색맹 / Deuteranopia)</option>
+                            <option value="tritanopia">제3 색각 이상 (청색맹 / Tritanopia)</option>
+                            <option value="achromatopsia">전색맹 (흑백 / Achromatopsia)</option>
+                        </select>
+                    </div>
 
-            // 섹션 토글
-            ['explore', 'compare', 'roadmap'].forEach(id => {
-                const section = document.getElementById(`section-${id}`);
-                if (id === tabId) {
-                    section.classList.remove('hidden');
-                    section.classList.add('block', 'animate-fade-in');
-                } else {
-                    section.classList.remove('block', 'animate-fade-in');
-                    section.classList.add('hidden');
-                }
-            });
-        }
+                    <!-- Filtered Sample UI Container -->
+                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 overflow-hidden">
+                        <div id="simulated-ui-target" class="transition-all duration-300 bg-white p-5 rounded-xl border shadow-sm space-y-4">
+                            <div class="flex justify-between items-center border-b pb-3">
+                                <span class="font-bold text-slate-800 text-sm">결제 상태 표기 예시</span>
+                                <span class="text-xs px-2 py-1 bg-red-100 text-red-700 font-bold rounded">결제 오류 (Red)</span>
+                            </div>
 
-        // 직업 카드 렌더링 (탐색 탭)
-        function renderJobCards() {
-            const grid = document.getElementById('job-grid');
-            grid.innerHTML = '';
+                            <p class="text-xs text-slate-600">
+                                아래 버튼들과 상태 아이콘들이 색상 이외에 **형태나 텍스트**로도 구별 가능한지 체크해보세요.
+                            </p>
 
-            Object.values(jobData).forEach(job => {
-                const card = document.createElement('div');
-                card.className = 'job-card bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer flex flex-col h-full';
-                card.onclick = () => openModal(job.id);
+                            <!-- Sample Action Buttons -->
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button class="px-3 py-2 bg-emerald-600 text-white rounded-lg font-medium flex items-center gap-1">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> 승인 완료
+                                </button>
+                                <button class="px-3 py-2 bg-amber-500 text-white rounded-lg font-medium flex items-center gap-1">
+                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> 보류 중
+                                </button>
+                                <button class="px-3 py-2 bg-red-600 text-white rounded-lg font-medium flex items-center gap-1">
+                                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> 승인 거절
+                                </button>
+                            </div>
 
-                card.innerHTML = `
-                    <div class="h-2 bg-gradient-to-r ${job.theme}"></div>
-                    <div class="p-6 flex-grow flex flex-col">
-                        <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-4 ${job.iconColor} text-2xl">
-                            <i class="fa-solid ${job.icon}"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">${job.title}</h3>
-                        <p class="text-slate-500 text-sm flex-grow line-clamp-3">${job.desc}</p>
-                        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-primary text-sm font-medium hover:text-indigo-700 transition-colors">
-                            상세 정보 보기 <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
+                            <!-- Sample Chart Representation -->
+                            <div class="pt-2">
+                                <div class="text-xs font-semibold text-slate-500 mb-2">색상 구분 차트 예시</div>
+                                <div class="h-6 w-full rounded-lg flex overflow-hidden font-mono text-[10px] text-white text-center font-bold">
+                                    <div class="bg-red-500 flex-1 flex items-center justify-center">A구역</div>
+                                    <div class="bg-green-500 flex-1 flex items-center justify-center">B구역</div>
+                                    <div class="bg-blue-500 flex-1 flex items-center justify-center">C구역</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                `;
-                grid.appendChild(card);
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                        💡 <strong>디자이너 팁:</strong> 정보 제공 시 색상에만 의존하지 말고, 아이콘/패턴/텍스트 라벨을 함께 제공해야 모든 사용자가 정확히 이해할 수 있습니다.
+                    </div>
+                </div>
+
+                <!-- Manual Accessibility Checklist (6 Cols) -->
+                <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="check-square" class="text-primary-600"></i>
+                            수동 자가 점검 체크리스트 (KWCAG 2.2)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">
+                            자동화 도구로 찾아내기 어려운 키보드 조작 및 정황적 접근성을 직접 체크하세요.
+                        </p>
+                    </div>
+
+                    <!-- Checklist Items -->
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">키보드 전용 접근성 (Tab 키)</span>
+                                <span class="text-slate-500 text-xs">마우스 없이 Tab 및 Enter/Space 키만으로 사이트의 모든 버튼과 링크를 이용할 수 있는가?</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">명확한 포커스 링 (Focus Ring)</span>
+                                <span class="text-slate-500 text-xs">Tab 키로 이동 시 현재 선택된 요소 둘레에 시각적 테두리(outline)가 명확히 표시되는가?</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">터치 영역 크기 확보 (Min 44x44px)</span>
+                                <span class="text-slate-500 text-xs">모바일 터치 버튼 및 아이콘 크기가 손가락으로 누르기 쉽게 충분히 큰가?</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">자동 재생 미디어 통제</span>
+                                <span class="text-slate-500 text-xs">배경 음악이나 동영상이 사용자 동의 없이 정지할 수 없게 자동 재생되지 않는가?</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Progress Indicator -->
+                    <div class="pt-2 border-t flex items-center justify-between text-xs font-semibold text-slate-600">
+                        <span>체크리스트 달성도:</span>
+                        <span id="chk-progress-text" class="text-primary-600 font-bold">0 / 4 완료 (0%)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-500">
+        <p>A11y Inspector &copy; 2026. WCAG 2.1 & KWCAG 2.2 웹 접근성 지침을 준수합니다.</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Sample Code Datasets
+        const SAMPLE_CODES = {
+            flawed: `<div class="card">
+    <!-- 문제 1: alt 속성이 누락된 이미지 -->
+    <img src="banner.jpg">
+    
+    <h2>최신 상품 목록</h2>
+    
+    <!-- 문제 2: 레이블(label)이 없는 입력창 -->
+    <input type="text" placeholder="검색어를 입력하세요">
+    
+    <!-- 문제 3: 텍스트 및 aria-label이 없는 버튼 -->
+    <button class="icon-btn">
+        <i class="fa fa-search"></i>
+    </button>
+    
+    <!-- 문제 4: 불명확한 링크 텍스트 -->
+    <a href="/details">여기 클릭</a>
+    
+    <!-- 문제 5: 제목 태그 계층 구조 스킵 (h2 -> h5) -->
+    <h5>상세 설명</h5>
+    
+    <!-- 문제 6: title 속성이 없는 iframe -->
+    <iframe src="https://maps.example.com"></iframe>
+</div>`,
+            good: `<main>
+    <!-- 올바른 예시: 명확한 alt 속성 제공 -->
+    <img src="banner.jpg" alt="2026년 봄 신상품 할인 이벤트 배너">
+    
+    <h2>최신 상품 목록</h2>
+    
+    <!-- 올바른 예시: label 태그와 input 연결 -->
+    <label for="search-input">상품 검색</label>
+    <input id="search-input" type="text" placeholder="검색어를 입력하세요">
+    
+    <!-- 올바른 예시: aria-label로 목적을 명확히 함 -->
+    <button type="submit" aria-label="검색 실행">
+        <i class="fa fa-search" aria-hidden="true"></i>
+    </button>
+    
+    <!-- 올바른 예시: 구체적 목적을 밝힌 링크 텍스트 -->
+    <a href="/details">봄 신상품 상세정보 보기</a>
+    
+    <h3>상세 설명</h3>
+    
+    <!-- 올바른 예시: title 속성이 명시된 iframe -->
+    <iframe src="https://maps.example.com" title="오프라인 매장 위치 지도"></iframe>
+</main>`,
+            empty: ``
+        };
+
+        // Active filter state for audit results
+        let currentAuditFilter = 'all';
+        let auditResultsData = [];
+
+        // Initialize Icons & App on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadSampleCode('flawed');
+            updateContrastCalc();
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            
+            // Reset Tab Button Styling
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-primary-600', 'text-white');
+                btn.classList.add('text-slate-300');
             });
+
+            // Active Tab
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('bg-primary-600', 'text-white');
+            activeBtn.classList.remove('text-slate-300');
         }
 
-        // 선택 박스 옵션 채우기 (비교 및 로드맵 탭)
-        function populateSelectBoxes() {
-            const compare1 = document.getElementById('compare-select-1');
-            const compare2 = document.getElementById('compare-select-2');
-            const roadmapSel = document.getElementById('roadmap-select');
-
-            Object.values(jobData).forEach((job, index) => {
-                const option = `<option value="${job.id}">${job.title}</option>`;
-                compare1.innerHTML += option;
-                roadmapSel.innerHTML += option;
-                
-                // 두 번째 비교 선택박스는 기본적으로 다른 직업이 선택되도록
-                const option2 = `<option value="${job.id}" ${index === 1 ? 'selected' : ''}>${job.title}</option>`;
-                compare2.innerHTML += option2;
-            });
-
-            // 초기 렌더링
-            renderComparison();
+        // Load Sample Code into Textarea
+        function loadSampleCode(key) {
+            const textarea = document.getElementById('code-input');
+            textarea.value = SAMPLE_CODES[key] || '';
+            runCodeAudit();
         }
 
-        // === 3. 모달 제어 ===
-        function openModal(jobId) {
-            const job = jobData[jobId];
-            if(!job) return;
+        // ==========================================
+        // 1. HTML ACCESSIBILITY AUDIT ENGINE
+        // ==========================================
+        function runCodeAudit() {
+            const htmlCode = document.getElementById('code-input').value;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlCode, 'text/html');
+            
+            auditResultsData = [];
 
-            // 데이터 채우기
-            document.getElementById('modal-title').textContent = job.title;
-            document.getElementById('modal-desc').textContent = job.desc;
-            document.getElementById('modal-duties').textContent = job.duties;
-            document.getElementById('modal-example').innerHTML = `<strong>실무 사례:</strong> ${job.example}`;
-            
-            // 전공
-            const majorsList = document.getElementById('modal-majors');
-            majorsList.innerHTML = job.majors.map(m => `<li>${m}</li>`).join('');
-            
-            // 선택과목
-            const electivesList = document.getElementById('modal-electives');
-            electivesList.innerHTML = job.electives.map(e => `<span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full whitespace-nowrap">${e}</span>`).join('');
-            
-            // 역량
-            const skillsList = document.getElementById('modal-skills');
-            skillsList.innerHTML = job.skills.map(s => `<span class="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 text-sm rounded-full font-medium shadow-sm">${s}</span>`).join('');
-            
-            // 프로젝트
-            document.getElementById('modal-project').textContent = `"${job.project}"`;
-
-            // 아이콘 및 헤더 배경
-            const headerBg = document.getElementById('modal-header-bg');
-            headerBg.className = `h-24 sm:h-32 bg-gradient-to-r ${job.theme} w-full relative`;
-            
-            const iconContainer = document.getElementById('modal-icon-container');
-            iconContainer.innerHTML = `<i class="fa-solid ${job.icon} ${job.iconColor}"></i>`;
-
-            // 모달 표시
-            const modal = document.getElementById('job-modal');
-            const panel = document.getElementById('modal-panel');
-            modal.classList.remove('hidden');
-            
-            // 애니메이션 리셋
-            panel.classList.remove('modal-exit-active', 'modal-exit');
-            panel.classList.add('modal-enter');
-            requestAnimationFrame(() => {
-                panel.classList.add('modal-enter-active');
-                panel.classList.remove('modal-enter');
-            });
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('job-modal');
-            const panel = document.getElementById('modal-panel');
-            
-            panel.classList.remove('modal-enter-active');
-            panel.classList.add('modal-exit');
-            requestAnimationFrame(() => {
-                panel.classList.add('modal-exit-active');
-            });
-
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                panel.classList.remove('modal-exit', 'modal-exit-active');
-            }, 300);
-        }
-
-        // === 4. 직업 비교 로직 ===
-        function renderComparison() {
-            const val1 = document.getElementById('compare-select-1').value;
-            const val2 = document.getElementById('compare-select-2').value;
-            
-            const resultDiv = document.getElementById('compare-result');
-            const warningDiv = document.getElementById('compare-warning');
-
-            if (val1 === val2) {
-                resultDiv.classList.add('hidden');
-                resultDiv.classList.remove('flex');
-                warningDiv.classList.remove('hidden');
+            // Case A: Empty Input
+            if (!htmlCode.trim()) {
+                renderAuditResults([], 100);
                 return;
             }
 
-            const job1 = jobData[val1];
-            const job2 = jobData[val2];
+            // --- Check 1: <img> Alternate Text ---
+            const images = doc.querySelectorAll('img');
+            images.forEach((img, idx) => {
+                const alt = img.getAttribute('alt');
+                const src = img.getAttribute('src') || `이미지 #${idx+1}`;
+                
+                if (alt === null) {
+                    auditResultsData.push({
+                        type: 'error',
+                        title: '이미지에 대체 텍스트(alt) 누락',
+                        elem: `<img src="${src}">`,
+                        desc: '시각 장애인이 스크린 리더로 인지할 수 없도록 alt 속성이 완전히 빠져 있습니다.',
+                        fix: `alt 속성을 추가하세요. 예: <img src="${src}" alt="제품 설명">`
+                    });
+                } else if (alt.trim() === '') {
+                    auditResultsData.push({
+                        type: 'warning',
+                        title: '빈 대체 텍스트 (alt="") 사용됨',
+                        elem: `<img src="${src}" alt="">`,
+                        desc: '장식용 이미지가 아니라면 의미 있는 정보를 담은 alt 텍스트를 제공해야 합니다.',
+                        fix: '정보성 이미지인 경우 alt에 간단한 설명을 기재하세요.'
+                    });
+                } else {
+                    auditResultsData.push({
+                        type: 'pass',
+                        title: '이미지 대체 텍스트 적절함',
+                        elem: `<img alt="${alt}">`,
+                        desc: `대체 텍스트가 명시되어 있습니다: "${alt}"`
+                    });
+                }
+            });
 
-            warningDiv.classList.add('hidden');
-            resultDiv.classList.remove('hidden');
-            resultDiv.classList.add('flex');
+            // --- Check 2: Form Input Labeling ---
+            const inputs = doc.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), select, textarea');
+            inputs.forEach(input => {
+                const id = input.getAttribute('id');
+                const ariaLabel = input.getAttribute('aria-label');
+                const ariaLabelledBy = input.getAttribute('aria-labelledby');
+                const title = input.getAttribute('title');
+                const type = input.getAttribute('type') || 'text';
+                
+                let hasLabel = false;
+                if (id && doc.querySelector(`label[for="${id}"]`)) hasLabel = true;
+                if (input.closest('label')) hasLabel = true;
+                if (ariaLabel || ariaLabelledBy || title) hasLabel = true;
 
-            // 1. 공통점 추론 (로직: 프로그래밍 및 컴퓨팅 사고력 기반)
-            let commonText = "두 직업 모두 <strong>프로그래밍 언어</strong>를 기반으로 문제를 해결하며, <strong>논리적이고 컴퓨팅적인 사고력(Computational Thinking)</strong>이 필수적입니다. 또한 기술의 발전 속도가 빠르므로 <strong>지속적인 학습 태도</strong>와 다른 파트(기획/디자인 등)와의 <strong>원활한 협업 능력</strong>이 공통적으로 요구됩니다.";
+                if (!hasLabel) {
+                    auditResultsData.push({
+                        type: 'error',
+                        title: '입력창(Form Input) 레이블 누락',
+                        elem: `<input type="${type}" ${id ? `id="${id}"` : ''}>`,
+                        desc: '스크린 리더가 이 입력창의 목적이 무엇인지 선언할 수 없습니다.',
+                        fix: `<label for="${id || 'input_id'}">레이블 이름</label>을 연결하거나 aria-label="설명"을 부여하세요.`
+                    });
+                } else {
+                    auditResultsData.push({
+                        type: 'pass',
+                        title: '입력창 접근성 레이블 연결됨',
+                        elem: `<input type="${type}">`,
+                        desc: '연결된 label 또는 aria-label이 존재합니다.'
+                    });
+                }
+            });
+
+            // --- Check 3: Buttons Lacking Accessible Text ---
+            const buttons = doc.querySelectorAll('button, [role="button"]');
+            buttons.forEach(btn => {
+                const text = btn.innerText.trim();
+                const ariaLabel = btn.getAttribute('aria-label');
+                const imgInside = btn.querySelector('img[alt]');
+                
+                if (!text && !ariaLabel && !imgInside) {
+                    auditResultsData.push({
+                        type: 'error',
+                        title: '버튼 텍스트 / 레이블 누락',
+                        elem: btn.outerHTML.substring(0, 60) + '...',
+                        desc: '아이콘만 포함되고 텍스트가 없는 버튼은 스크린 리더 사용자에게 아무 정보도 전달하지 못합니다.',
+                        fix: '버튼 안에 텍스트를 넣거나, aria-label="버튼기능" 속성을 추가하세요.'
+                    });
+                } else {
+                    auditResultsData.push({
+                        type: 'pass',
+                        title: '버튼 식별 텍스트 존재',
+                        elem: `<button>${text || ariaLabel || '아이콘 버튼'}</button>`,
+                        desc: '버튼에 읽을 수 있는 텍스트 또는 aria-label이 포함되어 있습니다.'
+                    });
+                }
+            });
+
+            // --- Check 4: Vague Link Text ---
+            const links = doc.querySelectorAll('a');
+            const vagueTexts = ['여기', '클릭', '여기 클릭', '더보기', '자세히보기', 'more', 'click here'];
+            links.forEach(link => {
+                const text = link.innerText.trim().toLowerCase();
+                const href = link.getAttribute('href');
+
+                if (!href) {
+                    auditResultsData.push({
+                        type: 'warning',
+                        title: 'href 속성이 없는 링크',
+                        elem: `<a>${text || '링크'}</a>`,
+                        desc: 'href 속성이 없으면 키보드 Tab 포커스가 이동하지 않습니다.',
+                        fix: '올바른 URL을 href에 넣거나, 버튼인 경우 <button> 태그로 변경하세요.'
+                    });
+                } else if (vagueTexts.includes(text)) {
+                    auditResultsData.push({
+                        type: 'warning',
+                        title: '모호한 링크 텍스트 사용',
+                        elem: `<a href="${href}">${text}</a>`,
+                        desc: '"여기 클릭", "더보기" 등의 모호한 단어는 맥락을 벗어나면 대상을 파악하기 어렵습니다.',
+                        fix: `목적지를 명확히 기술하세요. 예: "${text}" 대신 "봄 신상품 상세정보 보기"`
+                    });
+                } else if (text.length > 0) {
+                    auditResultsData.push({
+                        type: 'pass',
+                        title: '명확한 링크 목적 기술됨',
+                        elem: `<a href="${href}">${text}</a>`,
+                        desc: '목적지가 구체적인 링크 텍스트입니다.'
+                    });
+                }
+            });
+
+            // --- Check 5: iFrames without Title ---
+            const iframes = doc.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                const title = iframe.getAttribute('title');
+                if (!title) {
+                    auditResultsData.push({
+                        type: 'error',
+                        title: 'iframe에 title 속성 누락',
+                        elem: `<iframe src="${iframe.getAttribute('src') || ''}">`,
+                        desc: 'iframe 내부 프레임의 콘텐츠 내용을 요약하는 title 속성이 필요합니다.',
+                        fix: '<iframe title="지도 및 오프라인 매장 위치"> 처럼 title을 명시하세요.'
+                    });
+                }
+            });
+
+            // --- Check 6: Heading Hierarchy ---
+            const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+            let prevLevel = 0;
+            headings.forEach(h => {
+                const level = parseInt(h.tagName.substring(1));
+                if (prevLevel > 0 && level > prevLevel + 1) {
+                    auditResultsData.push({
+                        type: 'warning',
+                        title: '제목(Heading) 계층 구조 건너뜀',
+                        elem: `<${h.tagName.toLowerCase()}>${h.innerText.substring(0, 20)}</${h.tagName.toLowerCase()}>`,
+                        desc: `h${prevLevel} 다음에 바로 h${level}(으)로 레벨이 건너뛰어졌습니다. 스크린 리더 사용자의 탐색을 혼란스럽게 만듭니다.`,
+                        fix: `순차적인 헤딩 구조(h1 -> h2 -> h3)를 지켜주세요.`
+                    });
+                }
+                prevLevel = level;
+            });
+
+            // Calculate Accessibility Score
+            const errors = auditResultsData.filter(i => i.type === 'error').length;
+            const warnings = auditResultsData.filter(i => i.type === 'warning').length;
+            const passes = auditResultsData.filter(i => i.type === 'pass').length;
+            const total = errors + warnings + passes;
             
-            // 특정 조합에 따른 특수 공통점 추가
-            if((val1 === 'frontend' && val2 === 'backend') || (val1 === 'backend' && val2 === 'frontend')){
-                commonText += " 특히 두 직무는 '웹/앱 서비스'라는 하나의 완성된 프로덕트를 만들기 위해 데이터를 주고받으며 매우 밀접하게 협력하는 파트너 관계입니다.";
-            } else if ((val1 === 'ai' && val2 === 'data') || (val1 === 'data' && val2 === 'ai')) {
-                commonText += " 두 직무 모두 방대한 '데이터(Data)'를 다루며, 통계적 지식과 수학적 역량을 바탕으로 데이터 속에서 가치를 찾아낸다는 핵심 공통점이 있습니다.";
+            let score = 100;
+            if (total > 0) {
+                score = Math.max(0, Math.round(((passes + (warnings * 0.5)) / total) * 100));
             }
 
-            document.getElementById('compare-common').innerHTML = commonText;
-
-            // 2. 직무 차이 세팅
-            document.getElementById('compare-title-1').textContent = job1.title;
-            document.getElementById('compare-title-1').className = `text-xl font-bold mb-4 text-center md:text-left ${job1.iconColor}`;
-            document.getElementById('compare-duty-1').textContent = job1.duties;
-            document.getElementById('compare-skills-1').innerHTML = job1.skills.map(s => `<span class="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-600 text-xs rounded-full">${s}</span>`).join('');
-
-            document.getElementById('compare-title-2').textContent = job2.title;
-            document.getElementById('compare-title-2').className = `text-xl font-bold mb-4 text-center md:text-left ${job2.iconColor}`;
-            document.getElementById('compare-duty-2').textContent = job2.duties;
-            document.getElementById('compare-skills-2').innerHTML = job2.skills.map(s => `<span class="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-600 text-xs rounded-full">${s}</span>`).join('');
+            renderAuditResults(auditResultsData, score);
         }
 
-        // === 5. 로드맵 로직 ===
-        function renderRoadmap() {
-            const jobId = document.getElementById('roadmap-select').value;
-            const job = jobData[jobId];
-            const container = document.getElementById('roadmap-container');
-            
-            container.innerHTML = '';
+        // Render Results UI
+        function renderAuditResults(items, score) {
+            // Update Summary Stats
+            const scoreVal = document.getElementById('score-val');
+            scoreVal.innerText = `${score}점`;
+            scoreVal.className = `text-2xl font-bold mt-1 ${score >= 80 ? 'text-emerald-600' : score >= 50 ? 'text-amber-600' : 'text-red-600'}`;
 
-            const colors = ['bg-indigo-500', 'bg-blue-500', 'bg-violet-500', 'bg-purple-500'];
+            document.getElementById('error-count').innerText = items.filter(i => i.type === 'error').length;
+            document.getElementById('warning-count').innerText = items.filter(i => i.type === 'warning').length;
+            document.getElementById('pass-count').innerText = items.filter(i => i.type === 'pass').length;
 
-            job.roadmap.forEach((step, index) => {
-                // 좌우 번갈아가며 배치 (데스크탑 기준)
-                const isLeft = index % 2 === 0;
-                
-                const stepHTML = `
-                    <div class="relative flex items-center justify-between md:justify-normal w-full flex-col sm:flex-row ${isLeft ? 'sm:flex-row-reverse' : ''}">
-                        
-                        <!-- Timeline Dot -->
-                        <div class="absolute left-[19px] sm:left-1/2 transform -translate-x-1/2 flex items-center justify-center w-8 h-8 rounded-full ${colors[index]} border-4 border-white shadow pulse-dot z-10 top-0 sm:top-1/2 sm:-translate-y-1/2">
-                            <span class="text-white text-xs font-bold">${index + 1}</span>
-                        </div>
+            const resultsContainer = document.getElementById('audit-results-list');
+            resultsContainer.innerHTML = '';
 
-                        <!-- Content Card -->
-                        <div class="w-full sm:w-5/12 pl-12 sm:pl-0 ${isLeft ? 'sm:pr-10 sm:text-right' : 'sm:pl-10'}">
-                            <div class="p-5 bg-slate-50 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                                <span class="inline-block px-3 py-1 mb-2 text-xs font-bold text-white ${colors[index]} rounded-full shadow-sm">${step.period}</span>
-                                <h4 class="text-lg font-bold text-slate-900 mb-2">${step.title}</h4>
-                                <p class="text-sm text-slate-600 leading-relaxed">${step.desc}</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Empty spacer for proper flex layout on desktop -->
-                        <div class="hidden sm:block w-5/12"></div>
+            const filteredItems = items.filter(item => {
+                if (currentAuditFilter === 'all') return true;
+                return item.type === currentAuditFilter;
+            });
+
+            if (filteredItems.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="bg-white p-8 rounded-xl border text-center text-slate-400 text-sm">
+                        진단 항목이 없거나 필터 조건에 일치하는 결과가 없습니다.
                     </div>
                 `;
-                container.innerHTML += stepHTML;
+                return;
+            }
+
+            filteredItems.forEach(item => {
+                let badgeStyle = '';
+                let badgeText = '';
+                let borderStyle = '';
+
+                if (item.type === 'error') {
+                    badgeStyle = 'bg-red-100 text-red-800 border-red-200';
+                    badgeText = '오류 (Error)';
+                    borderStyle = 'border-l-4 border-l-red-500';
+                } else if (item.type === 'warning') {
+                    badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
+                    badgeText = '경고 (Warning)';
+                    borderStyle = 'border-l-4 border-l-amber-500';
+                } else {
+                    badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                    badgeText = '통과 (Pass)';
+                    borderStyle = 'border-l-4 border-l-emerald-500';
+                }
+
+                const card = document.createElement('div');
+                card.className = `bg-white p-4 rounded-xl border border-slate-200 shadow-sm ${borderStyle} space-y-2 text-xs sm:text-sm`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-bold text-slate-900">${escapeHtml(item.title)}</span>
+                        <span class="px-2 py-0.5 rounded-md border font-semibold text-[11px] ${badgeStyle}">${badgeText}</span>
+                    </div>
+                    <p class="text-slate-600">${escapeHtml(item.desc)}</p>
+                    <div class="bg-slate-900 text-slate-200 p-2.5 rounded-lg font-mono text-xs overflow-x-auto">
+                        <code>${escapeHtml(item.elem)}</code>
+                    </div>
+                    ${item.fix ? `
+                        <div class="bg-blue-50 text-blue-900 p-2.5 rounded-lg text-xs flex items-start gap-1.5 border border-blue-100">
+                            <i data-lucide="wrench" class="w-4 h-4 text-blue-600 shrink-0 mt-0.5"></i>
+                            <div><strong>개선 방법:</strong> ${escapeHtml(item.fix)}</div>
+                        </div>
+                    ` : ''}
+                `;
+                resultsContainer.appendChild(card);
             });
+
+            lucide.createIcons();
+        }
+
+        function filterAuditResults(type) {
+            currentAuditFilter = type;
+            // Update Filter Buttons Style
+            ['all', 'error', 'warning', 'pass'].forEach(t => {
+                const btn = document.getElementById(`filter-btn-${t}`);
+                if (t === type) {
+                    btn.className = 'px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium';
+                } else {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium';
+                }
+            });
+            runCodeAudit();
+        }
+
+
+        // ==========================================
+        // 2. COLOR CONTRAST CALCULATOR ENGINE
+        // ==========================================
+        function updateContrastCalc() {
+            const fgColor = document.getElementById('fg-color-picker').value;
+            const bgColor = document.getElementById('bg-color-picker').value;
+
+            document.getElementById('fg-hex-display').innerText = fgColor.toUpperCase();
+            document.getElementById('fg-hex-input').value = fgColor.toUpperCase();
+            document.getElementById('bg-hex-display').innerText = bgColor.toUpperCase();
+            document.getElementById('bg-hex-input').value = bgColor.toUpperCase();
+
+            // Calculate Contrast Ratio
+            const ratio = getContrastRatio(fgColor, bgColor);
+            const ratioText = `${ratio.toFixed(2)} : 1`;
+            document.getElementById('contrast-ratio-text').innerText = ratioText;
+
+            // Live Preview Card Styles
+            const previewBox = document.getElementById('contrast-preview-box');
+            previewBox.style.backgroundColor = bgColor;
+            previewBox.style.color = fgColor;
+
+            // WCAG Evaluation Badges
+            // AA Normal: 4.5:1 | AA Large: 3.0:1
+            // AAA Normal: 7.0:1 | AAA Large: 4.5:1
+            const aaNormal = ratio >= 4.5;
+            const aaLarge = ratio >= 3.0;
+            const aaaNormal = ratio >= 7.0;
+            const aaaLarge = ratio >= 4.5;
+
+            updateBadge('badge-aa-normal', aaNormal);
+            updateBadge('badge-aa-large', aaLarge);
+            updateBadge('badge-aaa-normal', aaaNormal);
+            updateBadge('badge-aaa-large', aaaLarge);
+
+            // Verdict overall badge
+            const verdictBadge = document.getElementById('ratio-verdict-badge');
+            if (aaaNormal) {
+                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1.5";
+                verdictBadge.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5"></i> <span>매우 우수 (AAA 통과)</span>`;
+            } else if (aaNormal) {
+                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-blue-100 text-blue-800 flex items-center gap-1.5";
+                verdictBadge.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> <span>양호 (AA 통과)</span>`;
+            } else if (aaLarge) {
+                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-amber-100 text-amber-800 flex items-center gap-1.5";
+                verdictBadge.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i> <span>주의 (큰 글자만 통과)</span>`;
+            } else {
+                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-red-100 text-red-800 flex items-center gap-1.5";
+                verdictBadge.innerHTML = `<i data-lucide="x-circle" class="w-5 h-5"></i> <span>대비 부족 (부적합)</span>`;
+            }
+            lucide.createIcons();
+        }
+
+        function updateBadge(elementId, isPass) {
+            const el = document.getElementById(elementId);
+            if (isPass) {
+                el.innerText = 'PASS';
+                el.className = 'px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700';
+            } else {
+                el.innerText = 'FAIL';
+                el.className = 'px-2 py-0.5 rounded font-bold bg-red-100 text-red-700';
+            }
+        }
+
+        function syncColorInput(type, hexVal) {
+            if (/^#[0-9A-F]{6}$/i.test(hexVal)) {
+                if (type === 'fg') {
+                    document.getElementById('fg-color-picker').value = hexVal;
+                } else {
+                    document.getElementById('bg-color-picker').value = hexVal;
+                }
+                updateContrastCalc();
+            }
+        }
+
+        function swapColors() {
+            const fg = document.getElementById('fg-color-picker').value;
+            const bg = document.getElementById('bg-color-picker').value;
+            document.getElementById('fg-color-picker').value = bg;
+            document.getElementById('bg-color-picker').value = fg;
+            updateContrastCalc();
+        }
+
+        function applyColorPreset(fg, bg) {
+            document.getElementById('fg-color-picker').value = fg;
+            document.getElementById('bg-color-picker').value = bg;
+            updateContrastCalc();
+        }
+
+        // Relative Luminance Math for WCAG 2.1
+        function getLuminance(hex) {
+            const rgb = hexToRgb(hex);
+            const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(v => {
+                v /= 255;
+                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
+        function getContrastRatio(hex1, hex2) {
+            const lum1 = getLuminance(hex1);
+            const lum2 = getLuminance(hex2);
+            const bright = Math.max(lum1, lum2);
+            const dark = Math.min(lum1, lum2);
+            return (bright + 0.05) / (dark + 0.05);
+        }
+
+        function hexToRgb(hex) {
+            let cleanHex = hex.replace('#', '');
+            if (cleanHex.length === 3) {
+                cleanHex = cleanHex.split('').map(c => c + c).join('');
+            }
+            const num = parseInt(cleanHex, 16);
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+
+        // ==========================================
+        // 3. VISION SIMULATOR & CHECKLIST ENGINE
+        // ==========================================
+        function applyVisionFilter(filterName) {
+            const container = document.getElementById('simulated-ui-target');
+            container.className = "transition-all duration-300 bg-white p-5 rounded-xl border shadow-sm space-y-4";
+            if (filterName !== 'none') {
+                container.classList.add(`filter-${filterName}`);
+            }
+        }
+
+        function updateChecklistProgress() {
+            const checkboxes = document.querySelectorAll('.chk-item');
+            const checkedCount = document.querySelectorAll('.chk-item:checked').length;
+            const total = checkboxes.length;
+            const percentage = Math.round((checkedCount / total) * 100);
+
+            const progressText = document.getElementById('chk-progress-text');
+            progressText.innerText = `${checkedCount} / ${total} 완료 (${percentage}%)`;
+            
+            if (percentage === 100) {
+                progressText.className = "text-emerald-600 font-bold";
+            } else {
+                progressText.className = "text-primary-600 font-bold";
+            }
+        }
+
+        // Helper Utility to escape HTML strings safely
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     </script>
 </body>
