@@ -1,24 +1,30 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="h-full bg-slate-900 text-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>웹 접근성 검사기 (A11y Inspector)</title>
+    <title>Web Accessibility Inspector Pro - WCAG 2.2 & KWCAG 2.2</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            900: '#1e3a8a',
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
                         }
+                    },
+                    fontFamily: {
+                        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace']
                     }
                 }
             }
@@ -28,428 +34,529 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-        }
-        /* Custom scrollbar */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: #0f172a;
         }
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: #334155;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: #475569;
         }
-        
-        /* SVG Color Matrix Filters for Color Blindness */
-        .filter-protanopia { filter: url('#protanopia-filter'); }
-        .filter-deuteranopia { filter: url('#deuteranopia-filter'); }
-        .filter-tritanopia { filter: url('#tritanopia-filter'); }
-        .filter-achromatopsia { filter: url('#achromatopsia-filter'); }
+
+        /* Print styles for Report Export */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            header, nav, #input-panel, .no-print {
+                display: none !important;
+            }
+            #report-output-area {
+                display: block !important;
+                width: 100% !important;
+            }
+            .print-card {
+                break-inside: avoid;
+                border: 1px solid #cbd5e1 !important;
+                background: white !important;
+                color: black !important;
+            }
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="h-full flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
 
-    <!-- SVG Filters for Color Blindness Simulation -->
-    <svg class="hidden" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <filter id="protanopia-filter">
-                <feColorMatrix type="matrix" values="0.567, 0.433, 0, 0, 0  0.558, 0.442, 0, 0, 0  0, 0.242, 0.758, 0, 0  0, 0, 0, 1, 0"/>
-            </filter>
-            <filter id="deuteranopia-filter">
-                <feColorMatrix type="matrix" values="0.625, 0.375, 0, 0, 0  0.7, 0.3, 0, 0, 0  0, 0.3, 0.7, 0, 0  0, 0, 0, 1, 0"/>
-            </filter>
-            <filter id="tritanopia-filter">
-                <feColorMatrix type="matrix" values="0.95, 0.05, 0, 0, 0  0, 0.433, 0.567, 0, 0  0, 0.475, 0.525, 0, 0  0, 0, 0, 1, 0"/>
-            </filter>
-            <filter id="achromatopsia-filter">
-                <feColorMatrix type="matrix" values="0.299, 0.587, 0.114, 0, 0  0.299, 0.587, 0.114, 0, 0  0.299, 0.587, 0.114, 0, 0  0, 0, 0, 1, 0"/>
-            </filter>
-        </defs>
-    </svg>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Header Navigation -->
-    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+    <!-- Main Header -->
+    <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
             <div class="flex items-center space-x-3">
-                <div class="bg-primary-600 p-2 rounded-lg">
-                    <i data-lucide="eye" class="w-6 h-6 text-white"></i>
+                <div class="bg-gradient-to-tr from-brand-600 to-indigo-500 p-2 rounded-xl shadow-lg shadow-brand-500/20">
+                    <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none">A11y Inspector</h1>
-                    <p class="text-xs text-slate-400 mt-0.5">웹 접근성 진단 및 개선 가이드</p>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-lg text-white tracking-tight">A11y Inspector Pro</h1>
+                        <span class="bg-brand-500/10 text-brand-400 border border-brand-500/30 text-[10px] font-semibold px-2 py-0.5 rounded-full">v2.2 Standard</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">웹 접근성(WCAG 2.2 / KWCAG 2.2) 자동 진단 및 AI 바이브 코딩 Hub</p>
                 </div>
             </div>
-            
-            <!-- Navigation Tabs -->
-            <nav class="flex space-x-1 sm:space-x-2 bg-slate-800 p-1 rounded-xl text-xs sm:text-sm font-medium">
-                <button onclick="switchTab('code-audit')" id="tab-code-audit" class="tab-btn px-3 py-1.5 rounded-lg text-white bg-primary-600 transition flex items-center gap-1.5">
-                    <i data-lucide="code-2" class="w-4 h-4"></i>
-                    <span>HTML 진단</span>
+
+            <!-- Tab Navigation -->
+            <nav class="flex space-x-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
+                <button onclick="switchTab('guide')" id="nav-guide" class="tab-btn px-3 sm:px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-brand-600 text-white shadow-md">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    <span>표준 가이드</span>
                 </button>
-                <button onclick="switchTab('contrast-calc')" id="tab-contrast-calc" class="tab-btn px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5">
-                    <i data-lucide="palette" class="w-4 h-4"></i>
-                    <span>색상 대비 계산기</span>
+                <button onclick="switchTab('inspector')" id="nav-inspector" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
+                    <i data-lucide="scan-line" class="w-4 h-4"></i>
+                    <span>통합 진단 & 리포트</span>
                 </button>
-                <button onclick="switchTab('simulator')" id="tab-simulator" class="tab-btn px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5">
-                    <i data-lucide="sliders" class="w-4 h-4"></i>
-                    <span>시각 시뮬레이터 & 체크리스트</span>
+                <button onclick="switchTab('prompts')" id="nav-prompts" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                    <span>AI 바이브 코딩 Hub</span>
                 </button>
             </nav>
         </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        <!-- ================= TAB 1: HTML CODE AUDITOR ================= -->
-        <section id="sec-code-audit" class="space-y-6">
-            <!-- Top Controls & Info -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <i data-lucide="file-search" class="text-primary-600"></i>
-                        HTML 웹 접근성 코드 진단
-                    </h2>
-                    <p class="text-sm text-slate-500 mt-1">
-                        HTML 코드를 입력하거나 샘플을 선택하여 대체 텍스트(alt), 폼 레이블, 링크/버튼 명확성 등을 자동 검사하세요.
-                    </p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <label for="sample-select" class="text-xs font-semibold text-slate-600 whitespace-nowrap">샘플 코드:</label>
-                    <select id="sample-select" onchange="loadSampleCode(this.value)" class="text-sm bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none">
-                        <option value="flawed">문제가 많은 HTML 샘플</option>
-                        <option value="good">접근성이 준수된 올바른 샘플</option>
-                        <option value="empty">빈 입력창</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Editor Input Panel (5 Cols) -->
-                <div class="lg:col-span-5 flex flex-col space-y-3">
-                    <div class="flex justify-between items-center">
-                        <label for="code-input" class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                            <i data-lucide="code" class="w-4 h-4 text-slate-500"></i> HTML 코드 입력
-                        </label>
-                        <button onclick="runCodeAudit()" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-1.5 shadow-sm">
-                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
-                            <span>검사 실행하기</span>
-                        </button>
-                    </div>
-                    <div class="relative flex-grow min-h-[380px]">
-                        <textarea id="code-input" class="w-full h-full min-h-[380px] p-4 font-mono text-sm bg-slate-900 text-slate-100 rounded-xl border border-slate-700 focus:ring-2 focus:ring-primary-500 focus:outline-none resize-y" placeholder="여기에 HTML 코드를 붙여넣으세요..."></textarea>
-                    </div>
-                </div>
-
-                <!-- Diagnostics Output Panel (7 Cols) -->
-                <div class="lg:col-span-7 space-y-4">
-                    <!-- Summary Card -->
-                    <div id="audit-summary-card" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">접근성 점수</div>
-                            <div id="score-val" class="text-2xl font-bold text-slate-800 mt-1">--</div>
-                        </div>
-                        <div class="p-3 bg-red-50 rounded-xl border border-red-100">
-                            <div class="text-xs font-semibold text-red-600 uppercase tracking-wider">오류 (Critical)</div>
-                            <div id="error-count" class="text-2xl font-bold text-red-700 mt-1">0</div>
-                        </div>
-                        <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                            <div class="text-xs font-semibold text-amber-600 uppercase tracking-wider">경고 (Warning)</div>
-                            <div id="warning-count" class="text-2xl font-bold text-amber-700 mt-1">0</div>
-                        </div>
-                        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                            <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">통과 항목</div>
-                            <div id="pass-count" class="text-2xl font-bold text-emerald-700 mt-1">0</div>
-                        </div>
-                    </div>
-
-                    <!-- Filter Bar -->
-                    <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200 text-xs">
-                        <span class="font-semibold text-slate-600">진단 결과 Filter:</span>
-                        <div class="flex space-x-1">
-                            <button onclick="filterAuditResults('all')" id="filter-btn-all" class="px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium">전체보기</button>
-                            <button onclick="filterAuditResults('error')" id="filter-btn-error" class="px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">오류만</button>
-                            <button onclick="filterAuditResults('warning')" id="filter-btn-warning" class="px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">경고만</button>
-                            <button onclick="filterAuditResults('pass')" id="filter-btn-pass" class="px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">통과만</button>
-                        </div>
-                    </div>
-
-                    <!-- Detailed Results List -->
-                    <div id="audit-results-list" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                        <!-- Dynamic Result Cards injected here -->
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ================= TAB 2: COLOR CONTRAST CALCULATOR ================= -->
-        <section id="sec-contrast-calc" class="hidden space-y-6">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <i data-lucide="contrast" class="text-primary-600"></i>
-                    텍스트 및 배경 색상 대비 계산기 (WCAG 2.1 기준)
-                </h2>
-                <p class="text-sm text-slate-500 mt-1">
-                    시력이 낮은 사용자도 글자를 쉽게 읽을 수 있도록 텍스트와 배경 사이의 명암비를 실시간 검사합니다. (일반 텍스트 4.5:1 이상 추천)
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Color Controls Panel (5 Cols) -->
-                <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                    <!-- Text Color Picker -->
+        <!-- ================= TAB 1: ACCESSIBILITY STANDARDS GUIDE ================= -->
+        <section id="tab-content-guide" class="space-y-6">
+            <!-- Guide Banner & Search -->
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                            <span>글자 색상 (Text Color)</span>
-                            <span id="fg-hex-display" class="font-mono text-xs text-slate-500">#0F172A</span>
-                        </label>
-                        <div class="flex items-center gap-3">
-                            <input type="color" id="fg-color-picker" value="#0f172a" oninput="updateContrastCalc()" class="w-12 h-12 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white">
-                            <input type="text" id="fg-hex-input" value="#0F172A" onchange="syncColorInput('fg', this.value)" class="flex-grow font-mono text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none uppercase">
-                            <button onclick="swapColors()" title="색상 반전" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition">
-                                <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Background Color Picker -->
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                            <span>배경 색상 (Background Color)</span>
-                            <span id="bg-hex-display" class="font-mono text-xs text-slate-500">#FFFFFF</span>
-                        </label>
-                        <div class="flex items-center gap-3">
-                            <input type="color" id="bg-color-picker" value="#ffffff" oninput="updateContrastCalc()" class="w-12 h-12 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white">
-                            <input type="text" id="bg-hex-input" value="#FFFFFF" onchange="syncColorInput('bg', this.value)" class="flex-grow font-mono text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none uppercase">
-                        </div>
-                    </div>
-
-                    <!-- Preset Palette Suggestions -->
-                    <div>
-                        <span class="block text-xs font-semibold text-slate-500 mb-2">자주 쓰는 고대비 색상 조합 추천</span>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <button onclick="applyColorPreset('#000000', '#FFFFFF')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between">
-                                <span>기본 흑백</span>
-                                <span class="inline-block w-4 h-4 rounded-full border" style="background: white; border-color: black;"></span>
-                            </button>
-                            <button onclick="applyColorPreset('#FFFFFF', '#1E293B')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between bg-slate-900 text-white">
-                                <span>다크 모드</span>
-                                <span class="inline-block w-4 h-4 rounded-full border border-white" style="background: #1e293b;"></span>
-                            </button>
-                            <button onclick="applyColorPreset('#1E3A8A', '#EFF6FF')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between bg-blue-50 text-blue-900">
-                                <span>블루 톤</span>
-                                <span class="inline-block w-4 h-4 rounded-full" style="background: #eff6ff; border: 1px solid #1e3a8a"></span>
-                            </button>
-                            <button onclick="applyColorPreset('#78350F', '#FEF3C7')" class="p-2 border rounded-lg hover:border-slate-400 flex items-center justify-between bg-amber-50 text-amber-900">
-                                <span>웜 경고 톤</span>
-                                <span class="inline-block w-4 h-4 rounded-full" style="background: #fef3c7; border: 1px solid #78350f"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Preview & WCAG Evaluation Panel (7 Cols) -->
-                <div class="lg:col-span-7 space-y-6">
-                    <!-- Ratio Badge Box -->
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div>
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">계산된 명암비 (Contrast Ratio)</span>
-                            <div id="contrast-ratio-text" class="text-4xl font-extrabold text-slate-900 mt-1">
-                                21.00 : 1
-                            </div>
-                        </div>
-                        <div id="ratio-verdict-badge" class="px-4 py-2 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1.5">
-                            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-                            <span>매우 우수 (AAA 통과)</span>
-                        </div>
-                    </div>
-
-                    <!-- Live Card Preview -->
-                    <div id="contrast-preview-box" class="p-8 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 flex flex-col justify-between min-h-[200px]" style="background-color: #ffffff; color: #0f172a;">
-                        <div>
-                            <h3 class="text-2xl font-bold mb-2">실시간 글자 가독성 테스트</h3>
-                            <p class="text-base leading-relaxed">
-                                저시력 사용자나 야외 직사광선 아래의 모바일 기기 사용자도 이 텍스트를 또렷하게 구분하여 읽을 수 있어야 합니다.
-                            </p>
-                        </div>
-                        <div class="mt-6 flex flex-wrap items-center gap-3 text-xs font-semibold">
-                            <span class="px-3 py-1.5 rounded-lg border border-current opacity-80">일반 텍스트 (16px)</span>
-                            <span class="px-3 py-1.5 rounded-lg border border-current font-bold text-lg">큰 텍스트 (24px)</span>
-                            <button class="px-4 py-2 rounded-lg bg-current font-semibold opacity-90 transition hover:opacity-100">
-                                <span class="mix-blend-difference text-white">버튼 요소를 시뮬레이션</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- WCAG 2.1 Pass/Fail Matrix -->
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h4 class="font-bold text-slate-900 text-sm mb-4">WCAG 2.1 접근성 준수 표준 평가</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <!-- AA Standard -->
-                            <div class="border border-slate-200 rounded-xl p-4 space-y-3">
-                                <div class="flex justify-between items-center pb-2 border-b">
-                                    <span class="font-bold text-slate-800 text-sm">AA 등급 (최저 권장)</span>
-                                    <span class="text-xs text-slate-500">기본 웹 표준</span>
-                                </div>
-                                <div class="flex justify-between items-center text-xs">
-                                    <span class="text-slate-600">일반 텍스트 (최소 4.5:1)</span>
-                                    <span id="badge-aa-normal" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
-                                </div>
-                                <div class="flex justify-between items-center text-xs">
-                                    <span class="text-slate-600">큰 텍스트 (최소 3.0:1)</span>
-                                    <span id="badge-aa-large" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
-                                </div>
-                            </div>
-
-                            <!-- AAA Standard -->
-                            <div class="border border-slate-200 rounded-xl p-4 space-y-3">
-                                <div class="flex justify-between items-center pb-2 border-b">
-                                    <span class="font-bold text-slate-800 text-sm">AAA 등급 (최고 권장)</span>
-                                    <span class="text-xs text-slate-500">고대비 우수 표준</span>
-                                </div>
-                                <div class="flex justify-between items-center text-xs">
-                                    <span class="text-slate-600">일반 텍스트 (최소 7.0:1)</span>
-                                    <span id="badge-aaa-normal" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
-                                </div>
-                                <div class="flex justify-between items-center text-xs">
-                                    <span class="text-slate-600">큰 텍스트 (최소 4.5:1)</span>
-                                    <span id="badge-aaa-large" class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700">PASS</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ================= TAB 3: VISUAL SIMULATOR & CHECKLIST ================= -->
-        <section id="sec-simulator" class="hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Color Blindness Simulator (6 Cols) -->
-                <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <i data-lucide="eye-off" class="text-primary-600"></i>
-                            색각 이상(색맹/색약) 시뮬레이터
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="book-marked" class="text-brand-400"></i>
+                            웹 접근성 표준 가이드라인
                         </h2>
-                        <p class="text-xs text-slate-500 mt-1">
-                            다양한 시각 특성을 가진 사용자가 UI 레이아웃 및 색상 정보를 어떻게 인식하는지 체험해보세요.
+                        <p class="text-sm text-slate-400 mt-1">
+                            글로벌 W3C <strong class="text-indigo-300">WCAG 2.2 (86개)</strong> 및 대한민국 국가 표준 <strong class="text-indigo-300">KWCAG 2.2 (33개)</strong> 전체 규격 수록
                         </p>
                     </div>
 
-                    <!-- Simulator Controls -->
-                    <div class="flex items-center gap-3">
-                        <label for="vision-filter-select" class="text-xs font-semibold text-slate-600">시각 유형 선택:</label>
-                        <select id="vision-filter-select" onchange="applyVisionFilter(this.value)" class="text-sm bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none flex-grow">
-                            <option value="none">일반 시각 (정상)</option>
-                            <option value="protanopia">제1 색각 이상 (적색맹 / Protanopia)</option>
-                            <option value="deuteranopia">제2 색각 이상 (녹색맹 / Deuteranopia)</option>
-                            <option value="tritanopia">제3 색각 이상 (청색맹 / Tritanopia)</option>
-                            <option value="achromatopsia">전색맹 (흑백 / Achromatopsia)</option>
+                    <!-- Standard Switcher -->
+                    <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-700">
+                        <button onclick="setGuideStandard('all')" id="std-btn-all" class="std-toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white">전체 보기</button>
+                        <button onclick="setGuideStandard('wcag')" id="std-btn-wcag" class="std-toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white">WCAG 2.2 (86)</button>
+                        <button onclick="setGuideStandard('kwcag')" id="std-btn-kwcag" class="std-toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white">KWCAG 2.2 (33)</button>
+                        <button onclick="setGuideStandard('diff')" id="std-btn-diff" class="std-toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white">표준 비교표</button>
+                    </div>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div class="md:col-span-6 relative">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                        <input type="text" id="guide-search-input" oninput="filterGuideItems()" placeholder="지침 번호, 키워드(예: 대체텍스트, contrast, target, 24px) 검색..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div class="md:col-span-3">
+                        <select id="guide-principle-select" onchange="filterGuideItems()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="all">전체 4대 원칙 (POUR)</option>
+                            <option value="perceivable">1. 인식의 용이성 (Perceivable)</option>
+                            <option value="operable">2. 운용의 용이성 (Operable)</option>
+                            <option value="understandable">3. 이해의 용이성 (Understandable)</option>
+                            <option value="robust">4. 견고성 (Robust)</option>
                         </select>
                     </div>
-
-                    <!-- Filtered Sample UI Container -->
-                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 overflow-hidden">
-                        <div id="simulated-ui-target" class="transition-all duration-300 bg-white p-5 rounded-xl border shadow-sm space-y-4">
-                            <div class="flex justify-between items-center border-b pb-3">
-                                <span class="font-bold text-slate-800 text-sm">결제 상태 표기 예시</span>
-                                <span class="text-xs px-2 py-1 bg-red-100 text-red-700 font-bold rounded">결제 오류 (Red)</span>
-                            </div>
-
-                            <p class="text-xs text-slate-600">
-                                아래 버튼들과 상태 아이콘들이 색상 이외에 **형태나 텍스트**로도 구별 가능한지 체크해보세요.
-                            </p>
-
-                            <!-- Sample Action Buttons -->
-                            <div class="flex flex-wrap gap-2 text-xs">
-                                <button class="px-3 py-2 bg-emerald-600 text-white rounded-lg font-medium flex items-center gap-1">
-                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> 승인 완료
-                                </button>
-                                <button class="px-3 py-2 bg-amber-500 text-white rounded-lg font-medium flex items-center gap-1">
-                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> 보류 중
-                                </button>
-                                <button class="px-3 py-2 bg-red-600 text-white rounded-lg font-medium flex items-center gap-1">
-                                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> 승인 거절
-                                </button>
-                            </div>
-
-                            <!-- Sample Chart Representation -->
-                            <div class="pt-2">
-                                <div class="text-xs font-semibold text-slate-500 mb-2">색상 구분 차트 예시</div>
-                                <div class="h-6 w-full rounded-lg flex overflow-hidden font-mono text-[10px] text-white text-center font-bold">
-                                    <div class="bg-red-500 flex-1 flex items-center justify-center">A구역</div>
-                                    <div class="bg-green-500 flex-1 flex items-center justify-center">B구역</div>
-                                    <div class="bg-blue-500 flex-1 flex items-center justify-center">C구역</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="md:col-span-3">
+                        <select id="guide-level-select" onchange="filterGuideItems()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="all">전체 등급 (A/AA/AAA)</option>
+                            <option value="A">Level A (기본)</option>
+                            <option value="AA">Level AA (권장/법적기준)</option>
+                            <option value="AAA">Level AAA (고도화)</option>
+                        </select>
                     </div>
-                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-                        💡 <strong>디자이너 팁:</strong> 정보 제공 시 색상에만 의존하지 말고, 아이콘/패턴/텍스트 라벨을 함께 제공해야 모든 사용자가 정확히 이해할 수 있습니다.
+                </div>
+            </div>
+
+            <!-- Standard Matrix View -->
+            <div id="guide-diff-view" class="hidden bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="git-compare" class="text-brand-400"></i>
+                    WCAG 2.2 vs KWCAG 2.2 핵심 차이점 분석 대시보드
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm text-slate-300 border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-slate-100 border-b border-slate-700">
+                                <th class="p-3 font-semibold">비교 항목</th>
+                                <th class="p-3 font-semibold text-indigo-300">WCAG 2.2 (W3C 글로벌 표준)</th>
+                                <th class="p-3 font-semibold text-emerald-300">KWCAG 2.2 (한국 국가 표준)</th>
+                                <th class="p-3 font-semibold text-amber-300">실무 개발 및 검수 가이드</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/60">
+                            <tr class="hover:bg-slate-700/30">
+                                <td class="p-3 font-bold text-white">평가 및 적합성 체계</td>
+                                <td class="p-3">Level A / AA / AAA 등급 선택적 평가 (법적 준수는 주로 AA 55개)</td>
+                                <td class="p-3">단일 등급, 33개 항목 전수 평가 (WA 마크 심사 시 준수율 95% 이상)</td>
+                                <td class="p-3">국내 공공/기업 서비스는 KWCAG 33개 항목 완벽 이수가 최우선 과제임.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30">
+                                <td class="p-3 font-bold text-white">스크린리더 호환성</td>
+                                <td class="p-3">VoiceOver, NVDA, JAWS 중심 (WAI-ARIA 스펙대로 구동)</td>
+                                <td class="p-3">국내 점유율 높은 센스리더(Sense Reader) 호환성 필수 검증</td>
+                                <td class="p-3">ARIA 속성 외에도 스크린리더용 가상 텍스트(<code class="bg-slate-900 px-1 py-0.5 rounded font-mono">.sr-only</code>) 마크업 병행 권장.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30">
+                                <td class="p-3 font-bold text-white">터치/클릭 타깃 크기</td>
+                                <td class="p-3">최소 24x24px 이상 (2.5.8 Target Size Minimum)</td>
+                                <td class="p-3">최소 24x24px 이상 (지침 3.3.5 입력 공간의 크기)</td>
+                                <td class="p-3">모바일 및 데스크톱 대화형 버튼 모두 패딩을 확보하여 $24 \times 24\text{px}$ 유지.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30">
+                                <td class="p-3 font-bold text-white">동영상 대체 수단</td>
+                                <td class="p-3">자막 + 오디오 설명(Audio Description) 필수 (AA 등급)</td>
+                                <td class="p-3">자막 또는 대본(텍스트 원고) 제공 허용</td>
+                                <td class="p-3">국내 제작 여건상 영상 하단에 대본 텍스트 배치를 통해 비용 절감 가능.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30">
+                                <td class="p-3 font-bold text-white">레이어 팝업(Modal)</td>
+                                <td class="p-3">ARIA <code class="bg-slate-900 px-1 py-0.5 rounded font-mono">role="dialog"</code> 및 초점 제어 강조</td>
+                                <td class="p-3">팝업 열림 시 초점 이동, 포커스 갇힘(Focus Trap), 닫힘 시 원래 버튼 복귀 정밀 평가</td>
+                                <td class="p-3">자바스크립트 키다운 이벤트 제어로 포커스 순환 로직을 구비해야 함.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Standard List Container -->
+            <div id="guide-cards-container" class="space-y-4">
+                <!-- Dynamically populated by JS -->
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 2: INSPECTOR & REPORT ================= -->
+        <section id="tab-content-inspector" class="hidden space-y-6">
+            <!-- Inspection Input Panel -->
+            <div id="input-panel" class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="scan" class="text-brand-400"></i>
+                        원스톱 웹 접근성 통합 자동 진단
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">
+                        웹 프로젝트 폴더를 업로드하거나 HTML/CSS 코드를 입력하세요. 브라우저 가상 렌더링을 통해 색상 대비, 타깃 크기, DOM 시맨틱 구조, 포커스 링을 100% 자동 정밀 검사합니다.
+                    </p>
+                </div>
+
+                <!-- Input Method Tabs -->
+                <div class="flex border-b border-slate-700 text-sm font-semibold">
+                    <button onclick="setInspectInputMode('folder')" id="mode-btn-folder" class="mode-tab-btn px-4 py-2.5 border-b-2 border-brand-500 text-brand-400 flex items-center gap-2">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i>
+                        <span>프로젝트 폴더 업로드</span>
+                    </button>
+                    <button onclick="setInspectInputMode('code')" id="mode-btn-code" class="mode-tab-btn px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                        <i data-lucide="code-2" class="w-4 h-4"></i>
+                        <span>인터랙티브 코드 에디터</span>
+                    </button>
+                    <button onclick="setInspectInputMode('url')" id="mode-btn-url" class="mode-tab-btn px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                        <i data-lucide="globe" class="w-4 h-4"></i>
+                        <span>웹사이트 URL 입력</span>
+                    </button>
+                </div>
+
+                <!-- Mode 1: Folder Upload -->
+                <div id="input-mode-folder" class="space-y-4">
+                    <div class="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-2xl p-8 text-center transition group bg-slate-900/50 cursor-pointer relative">
+                        <input type="file" id="folder-file-input" webkitdirectory directory multiple class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFolderSelect(event)">
+                        <div class="flex flex-col items-center justify-center space-y-3">
+                            <div class="p-4 bg-slate-800 rounded-full group-hover:bg-brand-600/20 group-hover:text-brand-400 text-slate-400 transition">
+                                <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <p class="text-base font-semibold text-white">개발 중인 웹 프로젝트 폴더 선택 또는 드래그</p>
+                                <p class="text-xs text-slate-400 mt-1">HTML, CSS, JS, 이미지 파일들이 포함된 전체 폴더를 지정하세요.</p>
+                            </div>
+                            <span id="selected-folder-info" class="text-xs text-brand-400 font-mono hidden">선택된 파일: 0개</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Manual Accessibility Checklist (6 Cols) -->
-                <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <!-- Mode 2: Interactive Code Editor -->
+                <div id="input-mode-code" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold text-slate-400">검사할 HTML & CSS 코드를 입력하거나 샘플을 선택하세요:</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="loadEditorSample('flawed')" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg transition">오류 포함 샘플</button>
+                            <button onclick="loadEditorSample('good')" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg transition">접근성 보완 샘플</button>
+                        </div>
+                    </div>
+                    <textarea id="inspect-code-input" class="w-full h-64 bg-slate-950 font-mono text-xs p-4 text-slate-200 rounded-xl border border-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none resize-y" placeholder="<html> ... 여기에 검사할 코드를 입력하세요 ... </html>"></textarea>
+                </div>
+
+                <!-- Mode 3: URL Input -->
+                <div id="input-mode-url" class="hidden space-y-4">
+                    <label class="block text-xs font-semibold text-slate-400">검사할 웹페이지 URL 주소:</label>
+                    <div class="flex gap-2">
+                        <input type="url" id="inspect-url-input" placeholder="https://example.com" value="https://example.com" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <p class="text-xs text-amber-400/90 flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i>
+                        참고: 교차 출처(CORS) 제한이 걸린 외부 웹사이트는 보안 정책상 샌드박스 정밀 검사에 제한이 있을 수 있습니다.
+                    </p>
+                </div>
+
+                <!-- Inspect Execution Trigger -->
+                <div class="flex justify-end pt-2">
+                    <button onclick="startFullInspection()" class="bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-brand-500/25 flex items-center gap-2 transition transform active:scale-95">
+                        <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                        <span>통합 자동 검수 시작하기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Virtual Sandbox Frame (Hidden or previewed) -->
+            <div id="sandbox-wrapper" class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl hidden">
+                <div class="bg-slate-900 px-4 py-2 border-b border-slate-700 flex justify-between items-center text-xs text-slate-400">
+                    <span class="flex items-center gap-1.5 font-mono">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Sandboxed Rendering Preview Frame
+                    </span>
+                    <button onclick="toggleSandboxVisibility()" class="hover:text-white transition">미리보기 토글</button>
+                </div>
+                <iframe id="inspect-sandbox-iframe" class="w-full h-80 bg-white" title="Accessibility Inspection Sandbox"></iframe>
+            </div>
+
+            <!-- Comprehensive Audit Report Output Area -->
+            <div id="report-output-area" class="hidden space-y-6">
+                <!-- Executive Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Score Card -->
+                    <div class="print-card bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">접근성 종합 점수</span>
+                        <div class="my-2 flex items-baseline gap-2">
+                            <span id="report-score-num" class="text-4xl font-extrabold text-brand-400">--</span>
+                            <span class="text-sm text-slate-500">/ 100점</span>
+                        </div>
+                        <div id="report-score-badge" class="text-xs font-bold px-2.5 py-1 rounded-md bg-brand-500/20 text-brand-300 w-max">
+                            진단 완료
+                        </div>
+                    </div>
+
+                    <!-- KWCAG Compliance Rate -->
+                    <div class="print-card bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">KWCAG 2.2 준수율</span>
+                        <div class="my-2">
+                            <span id="report-kwcag-rate" class="text-4xl font-extrabold text-emerald-400">--%</span>
+                        </div>
+                        <span class="text-xs text-slate-400">33개 국가 표준 지침 기준</span>
+                    </div>
+
+                    <!-- Error Count -->
+                    <div class="print-card bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-red-400 uppercase tracking-wider">발견된 위반 오류 (Errors)</span>
+                        <div class="my-2">
+                            <span id="report-error-count" class="text-4xl font-extrabold text-red-500">0</span>
+                        </div>
+                        <span class="text-xs text-slate-400">즉시 수정이 필요한 항목</span>
+                    </div>
+
+                    <!-- Warning Count -->
+                    <div class="print-card bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">주의 및 경고 (Warnings)</span>
+                        <div class="my-2">
+                            <span id="report-warning-count" class="text-4xl font-extrabold text-amber-400">0</span>
+                        </div>
+                        <span class="text-xs text-slate-400">개선 권장 사항</span>
+                    </div>
+                </div>
+
+                <!-- 4 Principles Compliance Breakdown -->
+                <div class="print-card bg-slate-800 border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="bar-chart-3" class="text-brand-400"></i>
+                            접근성 4대 원칙별(POUR) 진단 현황
+                        </h3>
+                        <div class="flex gap-2 no-print">
+                            <button onclick="exportReportJSON()" class="bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i> JSON 내보내기
+                            </button>
+                            <button onclick="window.print()" class="bg-brand-600 hover:bg-brand-500 text-xs text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                                <i data-lucide="printer" class="w-3.5 h-3.5"></i> PDF 보고서 인쇄
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Perceivable -->
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2">
+                            <div class="flex justify-between text-xs font-bold">
+                                <span class="text-slate-300">1. 인식의 용이성</span>
+                                <span id="bar-rate-p" class="text-brand-400">100%</span>
+                            </div>
+                            <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div id="bar-fill-p" class="bg-brand-500 h-full transition-all duration-500" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <!-- Operable -->
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2">
+                            <div class="flex justify-between text-xs font-bold">
+                                <span class="text-slate-300">2. 운용의 용이성</span>
+                                <span id="bar-rate-o" class="text-emerald-400">100%</span>
+                            </div>
+                            <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div id="bar-fill-o" class="bg-emerald-500 h-full transition-all duration-500" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <!-- Understandable -->
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2">
+                            <div class="flex justify-between text-xs font-bold">
+                                <span class="text-slate-300">3. 이해의 용이성</span>
+                                <span id="bar-rate-u" class="text-amber-400">100%</span>
+                            </div>
+                            <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div id="bar-fill-u" class="bg-amber-500 h-full transition-all duration-500" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <!-- Robust -->
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2">
+                            <div class="flex justify-between text-xs font-bold">
+                                <span class="text-slate-300">4. 견고성</span>
+                                <span id="bar-rate-r" class="text-indigo-400">100%</span>
+                            </div>
+                            <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div id="bar-fill-r" class="bg-indigo-500 h-full transition-all duration-500" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Audit Findings List -->
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="list-checks" class="text-brand-400"></i>
+                            상세 접근성 검수 결과 항목
+                        </h3>
+                        <!-- Result Filter Tabs -->
+                        <div class="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700 text-xs no-print">
+                            <button onclick="filterReportResults('all')" id="rep-filter-all" class="px-2.5 py-1 rounded bg-brand-600 text-white font-semibold">전체보기</button>
+                            <button onclick="filterReportResults('error')" id="rep-filter-error" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">오류만</button>
+                            <button onclick="filterReportResults('warning')" id="rep-filter-warning" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">경고만</button>
+                            <button onclick="filterReportResults('pass')" id="rep-filter-pass" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">통과만</button>
+                        </div>
+                    </div>
+
+                    <!-- Findings Container -->
+                    <div id="report-findings-list" class="space-y-4">
+                        <!-- Dynamic Result Cards Injected Here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 3: VIBE CODING PROMPT HUB ================= -->
+        <section id="tab-content-prompts" class="hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <i data-lucide="check-square" class="text-primary-600"></i>
-                            수동 자가 점검 체크리스트 (KWCAG 2.2)
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="sparkles" class="text-amber-400"></i>
+                            AI 바이브 코딩 프롬프트 & 스킬 라이브러리
                         </h2>
-                        <p class="text-xs text-slate-500 mt-1">
-                            자동화 도구로 찾아내기 어려운 키보드 조작 및 정황적 접근성을 직접 체크하세요.
+                        <p class="text-sm text-slate-400 mt-1">
+                            Cursor, Windsurf, Claude Code, v0, ChatGPT 이용 시 프로젝트에 주입하여 **WCAG 2.2 / KWCAG 2.2 완벽 준수 코드**를 생성하도록 만드는 시스템 규칙 모음
                         </p>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Checklist Items -->
-                    <div class="space-y-3 text-xs sm:text-sm">
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
-                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
-                            <div>
-                                <span class="font-semibold text-slate-800 block">키보드 전용 접근성 (Tab 키)</span>
-                                <span class="text-slate-500 text-xs">마우스 없이 Tab 및 Enter/Space 키만으로 사이트의 모든 버튼과 링크를 이용할 수 있는가?</span>
-                            </div>
-                        </label>
-
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
-                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
-                            <div>
-                                <span class="font-semibold text-slate-800 block">명확한 포커스 링 (Focus Ring)</span>
-                                <span class="text-slate-500 text-xs">Tab 키로 이동 시 현재 선택된 요소 둘레에 시각적 테두리(outline)가 명확히 표시되는가?</span>
-                            </div>
-                        </label>
-
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
-                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
-                            <div>
-                                <span class="font-semibold text-slate-800 block">터치 영역 크기 확보 (Min 44x44px)</span>
-                                <span class="text-slate-500 text-xs">모바일 터치 버튼 및 아이콘 크기가 손가락으로 누르기 쉽게 충분히 큰가?</span>
-                            </div>
-                        </label>
-
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
-                            <input type="checkbox" onchange="updateChecklistProgress()" class="chk-item mt-0.5 rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
-                            <div>
-                                <span class="font-semibold text-slate-800 block">자동 재생 미디어 통제</span>
-                                <span class="text-slate-500 text-xs">배경 음악이나 동영상이 사용자 동의 없이 정지할 수 없게 자동 재생되지 않는가?</span>
-                            </div>
-                        </label>
+            <!-- Master System Rules (.cursorrules) -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl font-mono text-xs font-bold border border-indigo-500/30">.cursorrules</span>
+                        <h3 class="text-lg font-bold text-white">마스터 시스템 규칙 (Cursor / Windsurf / Claude 설정용)</h3>
                     </div>
+                    <button onclick="copyPromptText('cursorrules-text')" class="bg-brand-600 hover:bg-brand-500 text-xs text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-md">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span>원클릭 복사</span>
+                    </button>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto">
+                    <pre id="cursorrules-text" class="whitespace-pre-wrap"># Role: World-Class Web Accessibility (WCAG 2.2 & KWCAG 2.2) Expert Developer
 
-                    <!-- Progress Indicator -->
-                    <div class="pt-2 border-t flex items-center justify-between text-xs font-semibold text-slate-600">
-                        <span>체크리스트 달성도:</span>
-                        <span id="chk-progress-text" class="text-primary-600 font-bold">0 / 4 완료 (0%)</span>
+When generating HTML, CSS, JavaScript, React, Vue, or Tailwind CSS code, you MUST strictly adhere to the following non-negotiable accessibility rules:
+
+1. Semantic HTML & ARIA:
+   - Always use proper semantic tags (&lt;header&gt;, &lt;nav&gt;, &lt;main&gt;, &lt;article&gt;, &lt;section&gt;, &lt;footer&gt;).
+   - Heading elements (&lt;h1&gt;-&lt;h6&gt;) MUST follow a strict sequential hierarchy without skipping levels.
+   - Every &lt;img&gt; MUST have a meaningful 'alt' attribute. Use alt="" ONLY for decorative images.
+   - Every &lt;input&gt;, &lt;select&gt;, and &lt;textarea&gt; MUST have a corresponding &lt;label for="..."&gt; or explicit 'aria-label'.
+   - Every &lt;iframe&gt; MUST have a descriptive 'title' attribute.
+   - Always set &lt;html lang="ko"&gt; (or the appropriate language code).
+
+2. CSS, Color Contrast & Target Sizes:
+   - Minimum Text Color Contrast Ratio MUST be at least 4.5:1 for normal text and 3:1 for large text.
+   - Minimum Interactive Touch/Click Target Size MUST be at least 24x24px (WCAG 2.5.8 / KWCAG 3.3.5).
+   - NEVER use `outline: none` or `outline: 0` on :focus or :focus-visible without providing a distinct visual focus ring (e.g., ring-2 ring-indigo-500).
+
+3. Keyboard Navigation & Modals:
+   - All interactive elements MUST be reachable and operable using the Keyboard (Tab, Enter, Space).
+   - Modal/Dialogs MUST implement a Focus Trap (focus stays within the modal when open) and return focus to the trigger button upon closing. Add `role="dialog"` and `aria-modal="true"`.
+   - Include a Skip Navigation link at the top of the body (&lt;a href="#main-content" class="sr-only focus:not-sr-only"&gt;본문 바로가기&lt;/a&gt;).
+
+4. Data Tables & Media:
+   - Tables MUST include a &lt;caption&gt; and proper &lt;th&gt; with `scope="col"` or `scope="row"`.
+   - Audio/Video elements MUST provide closed captions, transcripts, or text alternatives.</pre>
+                </div>
+            </div>
+
+            <!-- Specific Vibe Prompts Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Prompt Card 1: React Accessible Modal & Focus Trap -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-3 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded">KWCAG 4.2.2</span>
+                            <button onclick="copyPromptText('prompt-modal-code')" class="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> 복사
+                            </button>
+                        </div>
+                        <h4 class="font-bold text-white text-base">접근성 준수 모달(Modal) & 포커스 트랩 프롬프트</h4>
+                        <p class="text-xs text-slate-400">레이어 팝업 열림 시 내부 초점 이동, Shift+Tab 포커스 갇힘(Trap), ESC/닫기 시 기존 위치 복귀 구현</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto max-h-40">
+                        <pre id="prompt-modal-code" class="whitespace-pre-wrap">"React/Tailwind로 웹 접근성 KWCAG 4.2.2 지침을 완벽히 지키는 모달 컴포넌트를 작성해줘. 
+요구사항:
+1. role="dialog" aria-modal="true" 적용
+2. 열릴 때 팝업 내부 첫 번째 입력 요소로 autoFocus
+3. Tab/Shift+Tab 이동 시 포커스가 팝업 내부에서만 순환하는 Focus Trap 구현
+4. ESC 키 및 닫기 버튼 클릭 시 모달이 닫히며 열었던 트리거 버튼으로 focus 복귀"</pre>
+                    </div>
+                </div>
+
+                <!-- Prompt Card 2: KWCAG Sense Reader Compatibility -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-3 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-indigo-400 bg-indigo-400/10 border border-indigo-400/20 px-2 py-0.5 rounded">국내 센스리더 대응</span>
+                            <button onclick="copyPromptText('prompt-sr-code')" class="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> 복사
+                            </button>
+                        </div>
+                        <h4 class="font-bold text-white text-base">한국어 스크린리더(센스리더) 호환 유틸리티</h4>
+                        <p class="text-xs text-slate-400">최신 WAI-ARIA 속성을 건너뛰는 센스리더 특성을 보완하기 위한 시각적 숨김 `.sr-only` 패턴</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto max-h-40">
+                        <pre id="prompt-sr-code" class="whitespace-pre-wrap">/* Tailwind CSS 또는 Custom CSS Screen Reader Only Pattern */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* AI 프롬프트 지시어 */
+"아이콘만 있는 모든 버튼 및 복잡한 그래프 카드에는 시각적으로는 숨겨지지만 스크린리더만 읽을 수 있도록 &lt;span class="sr-only"&gt;의미 설명&lt;/span&gt; 텍스트를 배치해줘."</pre>
                     </div>
                 </div>
             </div>
@@ -458,518 +565,743 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-500">
-        <p>A11y Inspector &copy; 2026. WCAG 2.1 & KWCAG 2.2 웹 접근성 지침을 준수합니다.</p>
+    <footer class="bg-slate-950 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        <p>A11y Inspector Pro &copy; 2026. WCAG 2.2 (W3C) & KWCAG 2.2 (KS X 3253) 표준 규격을 완벽 준수합니다.</p>
     </footer>
 
-    <!-- JavaScript Application Logic -->
+    <!-- JavaScript Engine -->
     <script>
-        // Sample Code Datasets
-        const SAMPLE_CODES = {
-            flawed: `<div class="card">
-    <!-- 문제 1: alt 속성이 누락된 이미지 -->
-    <img src="banner.jpg">
-    
-    <h2>최신 상품 목록</h2>
-    
-    <!-- 문제 2: 레이블(label)이 없는 입력창 -->
-    <input type="text" placeholder="검색어를 입력하세요">
-    
-    <!-- 문제 3: 텍스트 및 aria-label이 없는 버튼 -->
-    <button class="icon-btn">
-        <i class="fa fa-search"></i>
-    </button>
-    
-    <!-- 문제 4: 불명확한 링크 텍스트 -->
-    <a href="/details">여기 클릭</a>
-    
-    <!-- 문제 5: 제목 태그 계층 구조 스킵 (h2 -> h5) -->
-    <h5>상세 설명</h5>
-    
-    <!-- 문제 6: title 속성이 없는 iframe -->
-    <iframe src="https://maps.example.com"></iframe>
-</div>`,
-            good: `<main>
-    <!-- 올바른 예시: 명확한 alt 속성 제공 -->
-    <img src="banner.jpg" alt="2026년 봄 신상품 할인 이벤트 배너">
-    
-    <h2>최신 상품 목록</h2>
-    
-    <!-- 올바른 예시: label 태그와 input 연결 -->
-    <label for="search-input">상품 검색</label>
-    <input id="search-input" type="text" placeholder="검색어를 입력하세요">
-    
-    <!-- 올바른 예시: aria-label로 목적을 명확히 함 -->
-    <button type="submit" aria-label="검색 실행">
-        <i class="fa fa-search" aria-hidden="true"></i>
-    </button>
-    
-    <!-- 올바른 예시: 구체적 목적을 밝힌 링크 텍스트 -->
-    <a href="/details">봄 신상품 상세정보 보기</a>
-    
-    <h3>상세 설명</h3>
-    
-    <!-- 올바른 예시: title 속성이 명시된 iframe -->
-    <iframe src="https://maps.example.com" title="오프라인 매장 위치 지도"></iframe>
-</main>`,
-            empty: ``
+        // =========================================================================
+        // DATASETS: WCAG 2.2 (86 Items) & KWCAG 2.2 (33 Items)
+        // =========================================================================
+
+        const WCAG_2_2_DATA = [
+            // Principles 1: Perceivable
+            { id: "WCAG-1.1.1", std: "wcag", principle: "perceivable", level: "A", title: "Non-text Content", desc: "텍스트가 아닌 모든 콘텐츠에 동등한 의미의 대체 텍스트(alt)를 제공해야 함." },
+            { id: "WCAG-1.2.1", std: "wcag", principle: "perceivable", level: "A", title: "Audio-only and Video-only (Prerecorded)", desc: "녹화 오디오는 대본, 소리 없는 녹화 영상은 대본/음성 설명을 제공해야 함." },
+            { id: "WCAG-1.2.2", std: "wcag", principle: "perceivable", level: "A", title: "Captions (Prerecorded)", desc: "녹화 동영상에 동기화된 자막을 제공해야 함." },
+            { id: "WCAG-1.2.3", std: "wcag", principle: "perceivable", level: "A", title: "Audio Description or Media Alternative", desc: "녹화 영상에 오디오 설명 또는 전체 대본 텍스트를 제공해야 함." },
+            { id: "WCAG-1.2.4", std: "wcag", principle: "perceivable", level: "AA", title: "Captions (Live)", desc: "실시간 라이브 미디어에 실시간 자막을 제공해야 함." },
+            { id: "WCAG-1.2.5", std: "wcag", principle: "perceivable", level: "AA", title: "Audio Description (Prerecorded)", desc: "녹화 영상의 시각 정보에 대한 별도 오디오 설명 트랙을 제공해야 함." },
+            { id: "WCAG-1.2.6", std: "wcag", principle: "perceivable", level: "AAA", title: "Sign Language (Prerecorded)", desc: "음성 미디어에 수어 통역 영상을 제공해야 함." },
+            { id: "WCAG-1.2.7", std: "wcag", principle: "perceivable", level: "AAA", title: "Extended Audio Description", desc: "일시정지를 활용한 확장 오디오 설명 트랙을 제공해야 함." },
+            { id: "WCAG-1.2.8", std: "wcag", principle: "perceivable", level: "AAA", title: "Media Alternative (Prerecorded)", desc: "미디어의 모든 대사·소리·동작을 포함한 통합 대본을 제공해야 함." },
+            { id: "WCAG-1.2.9", std: "wcag", principle: "perceivable", level: "AAA", title: "Audio-only (Live)", desc: "실시간 음성 방송에 실시간 텍스트 대본을 제공해야 함." },
+            { id: "WCAG-1.3.1", std: "wcag", principle: "perceivable", level: "A", title: "Info and Relationships", desc: "정보, 구조, 관계는 마크업(HTML/ARIA)을 통해 보조기술이 파악 가능해야 함." },
+            { id: "WCAG-1.3.2", std: "wcag", principle: "perceivable", level: "A", title: "Meaningful Sequence", desc: "CSS 제거 시에도 DOM 읽기 순서가 논리적이어야 함." },
+            { id: "WCAG-1.3.3", std: "wcag", principle: "perceivable", level: "A", title: "Sensory Characteristics", desc: "형태, 크기, 위치, 색상 등 감각적 특성만으로 조작을 지시하지 않아야 함." },
+            { id: "WCAG-1.3.4", std: "wcag", principle: "perceivable", level: "AA", title: "Orientation", desc: "화면 가로/세로 방향 전환 시 기능 제한이 없어야 함." },
+            { id: "WCAG-1.3.5", std: "wcag", principle: "perceivable", level: "AA", title: "Identify Input Purpose", desc: "개인정보 입력 필드에 autocomplete 속성을 지정해야 함." },
+            { id: "WCAG-1.3.6", std: "wcag", principle: "perceivable", level: "AAA", title: "Identify Purpose", desc: "UI 요소의 목적을 ARIA 랜드마크 및 아이콘 표준 기호로 유추 가능해야 함." },
+            { id: "WCAG-1.4.1", std: "wcag", principle: "perceivable", level: "A", title: "Use of Color", desc: "색상만으로 정보를 전달하지 않아야 함." },
+            { id: "WCAG-1.4.2", std: "wcag", principle: "perceivable", level: "A", title: "Audio Control", desc: "3초 이상 자동 재생되는 음성에 정지/음량 제어 수단을 제공해야 함." },
+            { id: "WCAG-1.4.3", std: "wcag", principle: "perceivable", level: "AA", title: "Contrast (Minimum)", desc: "일반 텍스트 4.5:1 이상, 대형 텍스트 3:1 이상의 명암 대비를 만족해야 함." },
+            { id: "WCAG-1.4.4", std: "wcag", principle: "perceivable", level: "AA", title: "Resize Text", desc: "텍스트 200% 확대 시 레이아웃 손실 없이 기능이 유지되어야 함." },
+            { id: "WCAG-1.4.5", std: "wcag", principle: "perceivable", level: "AA", title: "Images of Text", desc: "텍스트 이미지 대신 실제 텍스트를 사용해야 함 (로고 제외)." },
+            { id: "WCAG-1.4.6", std: "wcag", principle: "perceivable", level: "AAA", title: "Contrast (Enhanced)", desc: "일반 텍스트 7:1 이상, 대형 텍스트 4.5:1 이상의 고대비를 만족해야 함." },
+            { id: "WCAG-1.4.7", std: "wcag", principle: "perceivable", level: "AAA", title: "Low or No Background Audio", desc: "배경음이 없거나 대사보다 최소 20dB 이상 낮아야 함." },
+            { id: "WCAG-1.4.8", std: "wcag", principle: "perceivable", level: "AAA", title: "Visual Presentation", desc: "텍스트 폭(80자 이내), 줄간격(1.5배 이상), 커스텀 색상 선택을 제공해야 함." },
+            { id: "WCAG-1.4.9", std: "wcag", principle: "perceivable", level: "AAA", title: "Images of Text (No Exception)", desc: "로고 포함 어떠한 텍스트 이미지도 사용하지 않아야 함." },
+            { id: "WCAG-1.4.10", std: "wcag", principle: "perceivable", level: "AA", title: "Reflow", desc: "320px 폭(400% 확대) 시 수평 스크롤 없이 리플로우되어야 함." },
+            { id: "WCAG-1.4.11", std: "wcag", principle: "perceivable", level: "AA", title: "Non-text Contrast", desc: "필수 UI 부품/테두리의 색상 대비율이 3:1 이상이어야 함." },
+            { id: "WCAG-1.4.12", std: "wcag", principle: "perceivable", level: "AA", title: "Text Spacing", desc: "줄/단락/자간 간격 확장 시 화면 파손이 없어야 함." },
+            { id: "WCAG-1.4.13", std: "wcag", principle: "perceivable", level: "AA", title: "Content on Hover or Focus", desc: "마우스 오버/포커스로 노출되는 툴팁은 제어 및 유지가 가능해야 함." },
+
+            // Principles 2: Operable
+            { id: "WCAG-2.1.1", std: "wcag", principle: "operable", level: "A", title: "Keyboard", desc: "모든 기능이 키보드만으로 조작 가능해야 함." },
+            { id: "WCAG-2.1.2", std: "wcag", principle: "operable", level: "A", title: "No Keyboard Trap", desc: "키보드 포커스가 특정 레이어에 갇히지 않아야 함." },
+            { id: "WCAG-2.1.3", std: "wcag", principle: "operable", level: "AAA", title: "Keyboard (No Exception)", desc: "예외 없이 모든 동작을 키보드로 수행 가능해야 함." },
+            { id: "WCAG-2.1.4", std: "wcag", principle: "operable", level: "A", title: "Character Key Shortcuts", desc: "단일 문자 단축키의 비활성화/변경 기능을 제공해야 함." },
+            { id: "WCAG-2.2.1", std: "wcag", principle: "operable", level: "A", title: "Timing Adjustable", desc: "시간 제한 연장/조절 수단을 제공해야 함." },
+            { id: "WCAG-2.2.2", std: "wcag", principle: "operable", level: "A", title: "Pause, Stop, Hide", desc: "자동 이동/갱신 콘텐츠에 정지/숨김 제어 버튼을 제공해야 함." },
+            { id: "WCAG-2.2.3", std: "wcag", principle: "operable", level: "AAA", title: "No Timing", desc: "실시간 이벤트를 제외한 모든 시간 제한을 전면 배제함." },
+            { id: "WCAG-2.2.4", std: "wcag", principle: "operable", level: "AAA", title: "Interruptions", desc: "알림/팝업 방해 요소를 사용자가 연기/차단할 수 있어야 함." },
+            { id: "WCAG-2.2.5", std: "wcag", principle: "operable", level: "AAA", title: "Re-authenticating", desc: "재인증 시 이전 입력 데이터가 손실되지 않아야 함." },
+            { id: "WCAG-2.2.6", std: "wcag", principle: "operable", level: "AAA", title: "Timeouts", desc: "데이터 손실 위험 시 미리 경고 및 시간 제어권을 제공해야 함." },
+            { id: "WCAG-2.3.1", std: "wcag", principle: "operable", level: "A", title: "Three Flashes or Below", desc: "초당 3회 초과 번쩍이는 요소를 배치하지 않아야 함." },
+            { id: "WCAG-2.3.2", std: "wcag", principle: "operable", level: "AAA", title: "Three Flashes (No Exception)", desc: "어떠한 요소도 초당 3회 이상 번쩍이지 않아야 함." },
+            { id: "WCAG-2.3.3", std: "wcag", principle: "operable", level: "AAA", title: "Animation from Interactions", desc: "사용자 조작 시 모션 애니메이션 비활성화 기능을 제공해야 함." },
+            { id: "WCAG-2.4.1", std: "wcag", principle: "operable", level: "A", title: "Bypass Blocks", desc: "본문 바로가기(Skip Navigation) 링크를 제공해야 함." },
+            { id: "WCAG-2.4.2", std: "wcag", principle: "operable", level: "A", title: "Page Titled", desc: "명확하고 독창적인 <title>을 제공해야 함." },
+            { id: "WCAG-2.4.3", std: "wcag", principle: "operable", level: "A", title: "Focus Order", desc: "논리적인 Tab 초점 순서를 유지해야 함." },
+            { id: "WCAG-2.4.4", std: "wcag", principle: "operable", level: "A", title: "Link Purpose (In Context)", desc: "링크 목적을 문맥상 유추할 수 있어야 함." },
+            { id: "WCAG-2.4.5", std: "wcag", principle: "operable", level: "AA", title: "Multiple Ways", desc: "사이트맵, 검색 등 2가지 이상의 탐색 경로를 제공해야 함." },
+            { id: "WCAG-2.4.6", std: "wcag", principle: "operable", level: "AA", title: "Headings and Labels", desc: "헤딩 및 레이블의 목적을 명시해야 함." },
+            { id: "WCAG-2.4.7", std: "wcag", principle: "operable", level: "AA", title: "Focus Visible", desc: "시각적 포커스 표시기(outline)가 명확히 노출되어야 함." },
+            { id: "WCAG-2.4.8", std: "wcag", principle: "operable", level: "AAA", title: "Location", desc: "현재 위치 경로(Breadcrumb) 안내를 제공해야 함." },
+            { id: "WCAG-2.4.9", std: "wcag", principle: "operable", level: "AAA", title: "Link Purpose (Link Only)", desc: "링크 텍스트 단독으로 목적을 이해할 수 있어야 함." },
+            { id: "WCAG-2.4.10", std: "wcag", principle: "operable", level: "AAA", title: "Section Headings", desc: "각 섹션별 헤딩 태그를 구조화해야 함." },
+            { id: "WCAG-2.4.11", std: "wcag", principle: "operable", level: "AA", isNew22: true, title: "Focus Not Obscured (Minimum)", desc: "[WCAG 2.2] 고정 요소에 의해 포커스 요소가 완전히 가려지지 않고 일부 노출되어야 함." },
+            { id: "WCAG-2.4.12", std: "wcag", principle: "operable", level: "AAA", isNew22: true, title: "Focus Not Obscured (Enhanced)", desc: "[WCAG 2.2] 포커스 요소가 고정 요소에 단 1px도 가려지지 않아야 함." },
+            { id: "WCAG-2.4.13", std: "wcag", principle: "operable", level: "AAA", isNew22: true, title: "Focus Appearance", desc: "[WCAG 2.2] 포커스 아웃라인 두께 2px 이상, 대비율 3:1 이상 확보." },
+            { id: "WCAG-2.5.1", std: "wcag", principle: "operable", level: "A", title: "Pointer Gestures", desc: "복잡한 제스처에 대한 단일 터치/클릭 대체 수단을 제공해야 함." },
+            { id: "WCAG-2.5.2", std: "wcag", principle: "operable", level: "A", title: "Pointer Cancellation", desc: "클릭 동작 완료는 MouseUp 시점에 발생해야 취소 가능함." },
+            { id: "WCAG-2.5.3", std: "wcag", principle: "operable", level: "A", title: "Label in Name", desc: "시각 레이블과 aria-label 명칭이 일치해야 함." },
+            { id: "WCAG-2.5.4", std: "wcag", principle: "operable", level: "A", title: "Motion Actuation", desc: "기기 흔들기 조작 시 일반 버튼 입력 수단을 병행 제공해야 함." },
+            { id: "WCAG-2.5.5", std: "wcag", principle: "operable", level: "AAA", title: "Target Size (Enhanced)", desc: "클릭/터치 타깃 크기는 최소 44x44px 이상이어야 함." },
+            { id: "WCAG-2.5.6", std: "wcag", principle: "operable", level: "AAA", title: "Concurrent Input Mechanisms", desc: "다양한 입력 기기(터치/키보드/마우스)를 동시 지원해야 함." },
+            { id: "WCAG-2.5.7", std: "wcag", principle: "operable", level: "AA", isNew22: true, title: "Dragging Movements", desc: "[WCAG 2.2] 드래그 앤 드롭 동작에 대한 단일 클릭 대체 수단을 제공해야 함." },
+            { id: "WCAG-2.5.8", std: "wcag", principle: "operable", level: "AA", isNew22: true, title: "Target Size (Minimum)", desc: "[WCAG 2.2] 모든 클릭/터치 타깃 크기는 최소 24x24px 이상이어야 함." },
+
+            // Principles 3: Understandable
+            { id: "WCAG-3.1.1", std: "wcag", principle: "understandable", level: "A", title: "Language of Page", desc: "HTML 문서 주 언어 속성을 명시해야 함 (<html lang='ko'>)." },
+            { id: "WCAG-3.1.2", std: "wcag", principle: "understandable", level: "AA", title: "Language of Parts", desc: "외국어 단락에 lang 속성을 명시해야 함." },
+            { id: "WCAG-3.1.3", std: "wcag", principle: "understandable", level: "AAA", title: "Unusual Words", desc: "생소한 단어 및 전문 용어 정의를 제공해야 함." },
+            { id: "WCAG-3.1.4", std: "wcag", principle: "understandable", level: "AAA", title: "Abbreviations", desc: "약어(<abbr>)의 풀이 의미를 명시해야 함." },
+            { id: "WCAG-3.1.5", std: "wcag", principle: "understandable", level: "AAA", title: "Reading Level", desc: "고난도 글에 대한 쉬운 요약본을 제공해야 함." },
+            { id: "WCAG-3.1.6", std: "wcag", principle: "understandable", level: "AAA", title: "Pronunciation", desc: "발음/성조 안내를 제공해야 함." },
+            { id: "WCAG-3.2.1", std: "wcag", principle: "understandable", level: "A", title: "On Focus", desc: "초점 획득 시 급작스러운 문맥 변경을 금지함." },
+            { id: "WCAG-3.2.2", std: "wcag", principle: "understandable", level: "A", title: "On Input", desc: "값 입력/선택 시 급작스러운 페이지 이동을 금지함." },
+            { id: "WCAG-3.2.3", std: "wcag", principle: "understandable", level: "AA", title: "Consistent Navigation", desc: "페이지 간 일관된 내비게이션 배치를 유지해야 함." },
+            { id: "WCAG-3.2.4", std: "wcag", principle: "understandable", level: "AA", title: "Consistent Identification", desc: "동일 기능 요소의 일관된 명칭을 사용해야 함." },
+            { id: "WCAG-3.2.5", std: "wcag", principle: "understandable", level: "AAA", title: "Change on Request", desc: "사용자의 명시적 요청 시에만 화면 변화가 발생해야 함." },
+            { id: "WCAG-3.2.6", std: "wcag", principle: "understandable", level: "A", isNew22: true, title: "Consistent Help", desc: "[WCAG 2.2] 지원/도움말 기능이 여러 페이지에 존재할 때 동일한 위치에 배치해야 함." },
+            { id: "WCAG-3.3.1", std: "wcag", principle: "understandable", level: "A", title: "Error Identification", desc: "폼 입력 오류 발생 시 위치와 원인을 텍스트로 알릴 것." },
+            { id: "WCAG-3.3.2", std: "wcag", principle: "understandable", level: "A", title: "Labels or Instructions", desc: "입력 폼의 레이블 및 양식 안내를 제공할 것." },
+            { id: "WCAG-3.3.3", std: "wcag", principle: "understandable", level: "AA", title: "Error Suggestion", desc: "오류 수정 가이드를 제안해야 함." },
+            { id: "WCAG-3.3.4", std: "wcag", principle: "understandable", level: "AA", title: "Error Prevention (Legal/Financial)", desc: "주요 결제/계약 거래 시 확인·취소·수정 절차 필수 제공." },
+            { id: "WCAG-3.3.5", std: "wcag", principle: "understandable", level: "AAA", title: "Help", desc: "맥락에 맞는 구체적 입력 도움말을 제공해야 함." },
+            { id: "WCAG-3.3.6", std: "wcag", principle: "understandable", level: "AAA", title: "Error Prevention (All)", desc: "모든 데이터 제출 전 최종 확인 절차를 마련해야 함." },
+            { id: "WCAG-3.3.7", std: "wcag", principle: "understandable", level: "A", isNew22: true, title: "Redundant Entry", desc: "[WCAG 2.2] 동일 프로세스 내 중복 정보 재입력을 방지해야 함." },
+            { id: "WCAG-3.3.8", std: "wcag", principle: "understandable", level: "AA", isNew22: true, title: "Accessible Authentication (Minimum)", desc: "[WCAG 2.2] 로그인 시 인지 암기 테스트 배제 및 붙여넣기 허용." },
+            { id: "WCAG-3.3.9", std: "wcag", principle: "understandable", level: "AAA", isNew22: true, title: "Accessible Authentication (Enhanced)", desc: "[WCAG 2.2] 패스키, 생체인증 등 인지 테스트 전면 배제." },
+
+            // Principles 4: Robust
+            { id: "WCAG-4.1.2", std: "wcag", principle: "robust", level: "A", title: "Name, Role, Value", desc: "커스텀 UI의 Name, Role, Value/State 정보를 보조기술에 제공해야 함." },
+            { id: "WCAG-4.1.3", std: "wcag", principle: "robust", level: "AA", title: "Status Messages", desc: "동적 알림 발생 시 ARIA 라이브 리전을 통해 음성 출력해야 함." }
+        ];
+
+        const KWCAG_2_2_DATA = [
+            // Principle 1: 인식의 용이성 (9)
+            { id: "KWCAG-1.1.1", std: "kwcag", principle: "perceivable", level: "AA", title: "대체 텍스트", desc: "텍스트 아닌 콘텐츠에는 적절한 대체 텍스트를 제공해야 한다." },
+            { id: "KWCAG-1.2.1", std: "kwcag", principle: "perceivable", level: "AA", title: "자막 제공", desc: "멀티미디어 콘텐츠에는 자막, 대본 또는 수어를 제공해야 한다." },
+            { id: "KWCAG-1.3.1", std: "kwcag", principle: "perceivable", level: "AA", title: "색상에 무관한 콘텐츠 인식", desc: "색상만으로 정보를 구별하지 않도록 패턴/텍스트를 함께 제공해야 한다." },
+            { id: "KWCAG-1.3.2", std: "kwcag", principle: "perceivable", level: "AA", title: "명확한 색상 대비", desc: "텍스트와 배경 간 명암 대비는 4.5:1 이상(대형 텍스트 3:1 이상)이어야 한다." },
+            { id: "KWCAG-1.3.3", std: "kwcag", principle: "perceivable", level: "AA", title: "자동 재생 금지", desc: "3초 이상 재생되는 음성은 자동 재생을 금지하고 제어 수단을 제공해야 한다." },
+            { id: "KWCAG-1.3.4", std: "kwcag", principle: "perceivable", level: "AA", title: "콘텐츠 간의 구분", desc: "인접한 콘텐츠 영역 간의 경계를 시각적으로 명확히 구별해야 한다." },
+            { id: "KWCAG-1.3.5", std: "kwcag", principle: "perceivable", level: "AA", title: "반응형 콘텐츠", desc: "화면 크기/방향 변경 시 콘텐츠 손실이 없어야 한다." },
+            { id: "KWCAG-1.3.6", std: "kwcag", principle: "perceivable", level: "AA", title: "텍스트 크기 조절", desc: "브라우저 텍스트 확대 시 레이아웃 깨짐이 없어야 한다." },
+            { id: "KWCAG-1.3.7", std: "kwcag", principle: "perceivable", level: "AA", isNew22: true, title: "포커스 가림 방지", desc: "[KWCAG 2.2] 키보드 포커스가 고정 레이어 등에 의해 완전히 가려지지 않아야 한다." },
+
+            // Principle 2: 운용의 용이성 (9)
+            { id: "KWCAG-2.1.1", std: "kwcag", principle: "operable", level: "AA", title: "키보드 사용 보장", desc: "모든 기능은 키보드만으로 이용 가능해야 한다." },
+            { id: "KWCAG-2.1.2", std: "kwcag", principle: "operable", level: "AA", title: "초점 이동과 표시", desc: "초점이 논리적으로 이동하고 시각적으로 명확히 표시되어야 한다 (outline:none 금지)." },
+            { id: "KWCAG-2.1.3", std: "kwcag", principle: "operable", level: "AA", title: "조작 가능 (Focus Trap)", desc: "키보드 초점이 포커스 트랩에 갇히지 않고 탈출 가능해야 한다." },
+            { id: "KWCAG-2.1.4", std: "kwcag", principle: "operable", level: "AA", isNew22: true, title: "포인터 입력 제스처", desc: "[KWCAG 2.2] 복잡한 경로 드래그 대신 단순 클릭 조작을 허용해야 한다." },
+            { id: "KWCAG-2.2.1", std: "kwcag", principle: "operable", level: "AA", title: "응답시간 조절", desc: "시간 제한이 있는 경우 연장/무효화 수단을 제공해야 한다." },
+            { id: "KWCAG-2.2.2", std: "kwcag", principle: "operable", level: "AA", title: "정지 기능 제공", desc: "자동 스크롤/갱신 콘텐츠에 정지 제어 버튼을 제공해야 한다." },
+            { id: "KWCAG-2.3.1", std: "kwcag", principle: "operable", level: "AA", title: "깜빡임과 번쩍임 제어", desc: "초당 3~50Hz 주기의 깜빡이는 콘텐츠를 제공하지 않아야 한다." },
+            { id: "KWCAG-2.4.1", std: "kwcag", principle: "operable", level: "AA", title: "건너뛰기 링크", desc: "본문 영역 바로가기 링크를 제공해야 한다." },
+            { id: "KWCAG-2.4.2", std: "kwcag", principle: "operable", level: "AA", title: "제목 제공", desc: "독창적이고 내용을 유추할 수 있는 문서 제목(<title>)을 제공해야 한다." },
+            { id: "KWCAG-2.4.3", std: "kwcag", principle: "operable", level: "AA", title: "적절한 프레임 제목", desc: "<iframe> 요소에 내용과 목적을 설명하는 title 속성을 명시해야 한다." },
+
+            // Principle 3: 이해의 용이성 (11)
+            { id: "KWCAG-3.1.1", std: "kwcag", principle: "understandable", level: "AA", title: "기본 언어 표시", desc: "최상위 HTML 요소에 주 언어 속성(<html lang='ko'>)을 명시해야 한다." },
+            { id: "KWCAG-3.2.1", std: "kwcag", principle: "understandable", level: "AA", title: "사용자 의도에 따른 기능 실행", desc: "초점 획득이나 값 선택만으로 의도치 않은 화면 전환이 없어야 한다." },
+            { id: "KWCAG-3.3.1", std: "kwcag", principle: "understandable", level: "AA", title: "콘텐츠의 선형화", desc: "CSS 제거 시에도 논리적인 읽기 순서가 유지되어야 한다." },
+            { id: "KWCAG-3.3.2", std: "kwcag", principle: "understandable", level: "AA", title: "표의 구성", desc: "데이터 표에 <caption>, <th>, scope 속성을 정확히 명시해야 한다." },
+            { id: "KWCAG-3.3.3", std: "kwcag", principle: "understandable", level: "AA", title: "레이블 제공", desc: "입력 폼 요소에 대응하는 <label for=''>를 연결해야 한다." },
+            { id: "KWCAG-3.3.4", std: "kwcag", principle: "understandable", level: "AA", title: "오류 수정", desc: "입력 오류 원인을 텍스트로 알리고 수정 위치로 초점을 이동시켜야 한다." },
+            { id: "KWCAG-3.3.5", std: "kwcag", principle: "understandable", level: "AA", isNew22: true, title: "입력 공간의 크기", desc: "[KWCAG 2.2] 대화형 요소의 유효 타깃 크기는 24x24px 이상이어야 한다." },
+            { id: "KWCAG-3.3.6", std: "kwcag", principle: "understandable", level: "AA", isNew22: true, title: "접근 가능한 인증", desc: "[KWCAG 2.2] 암기 기반 인증 외 붙여넣기 및 자동완성을 허용해야 한다." },
+            { id: "KWCAG-3.3.7", std: "kwcag", principle: "understandable", level: "AA", isNew22: true, title: "반복 정보 입력 지양", desc: "[KWCAG 2.2] 동일 프로세스 내 중복 입력 방지 기능을 제공해야 한다." },
+
+            // Principle 4: 견고성 (4)
+            { id: "KWCAG-4.1.1", std: "kwcag", principle: "robust", level: "AA", title: "마크업 오류 방지", desc: "태그 닫힘, 중첩 구조, ID 중복 금지 등 HTML 문법을 준수해야 한다." },
+            { id: "KWCAG-4.2.1", std: "kwcag", principle: "robust", level: "AA", title: "웹 애플리케이션 접근성", desc: "커스텀 위젯 구현 시 올바른 WAI-ARIA(role, state, property)를 적용해야 한다." },
+            { id: "KWCAG-4.2.2", std: "kwcag", principle: "robust", level: "AA", title: "레이어 팝업 접근성", desc: "팝업 열림 시 내부로 포커스 이동, 내부 순환, 닫힘 시 기존 버튼으로 복귀해야 한다." },
+            { id: "KWCAG-4.2.3", std: "kwcag", principle: "robust", level: "AA", title: "초점 이동 순서", desc: "동적 콘텐츠 삽입 시 논리적인 초점 이동 순서를 유지해야 한다." }
+        ];
+
+        // Sample HTML Codes for Editor Sandbox
+        const DEMO_SAMPLES = {
+            flawed: `<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>테스트 쇼핑몰</title>
+    <style>
+        /* 접근성 위반: focus 아웃라인 제거 */
+        button:focus, a:focus { outline: none !important; }
+        .low-contrast-text { color: #94a3b8; background-color: #ffffff; } /* 대비율 부족: 2.3:1 */
+        .tiny-btn { width: 16px; height: 16px; display: inline-block; } /* 대비율 미달: 16px */
+    </style>
+</head>
+<body>
+    <div>
+        <!-- 위반 1: alt 속성 누락 -->
+        <img src="banner.png">
+
+        <!-- 위반 2: 헤딩 위계 순서 스킵 (h1 -> h4) -->
+        <h1>메인 이벤트</h1>
+        <h4>할인 품목</h4>
+
+        <!-- 위반 3: 색상 대비 부족 텍스트 -->
+        <p class="low-contrast-text">이 글자는 연한 회색이라 가독성이 매우 낮습니다.</p>
+
+        <!-- 위반 4: 타깃 크기 24px 미만 (16px) -->
+        <button class="tiny-btn" onclick="alert('small')">+</button>
+
+        <!-- 위반 5: 레이블 없는 input -->
+        <input type="text" placeholder="검색어 입력">
+
+        <!-- 위반 6: iframe title 누락 -->
+        <iframe src="about:blank"></iframe>
+
+        <!-- 위반 7: caption 없는 table -->
+        <table>
+            <tr><td>데이터1</td><td>데이터2</td></tr>
+        </table>
+    </div>
+</body>
+</html>`,
+            good: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>올바른 접근성 쇼핑몰</title>
+    <style>
+        /* 포커스 링 명확히 제공 */
+        button:focus-visible, a:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+        .good-contrast-text { color: #0f172a; background-color: #ffffff; } /* 대비율 19:1 */
+        .accessible-btn { min-width: 32px; min-height: 32px; padding: 8px; } /* 타깃 32px */
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="sr-only focus:not-sr-only">본문 바로가기</a>
+    <main id="main-content">
+        <!-- 올바른 alt -->
+        <img src="banner.png" alt="2026 봄 신상품 30% 할인 행사이벤트">
+
+        <h1>메인 이벤트</h1>
+        <h2>할인 품목</h2>
+
+        <p class="good-contrast-text">또렷하게 잘 읽히는 높은 명암비의 텍스트입니다.</p>
+
+        <!-- 32px 타깃 버튼 -->
+        <button class="accessible-btn" aria-label="수량 증가">+</button>
+
+        <!-- 레이블이 연결된 input -->
+        <label for="site-search">상품 검색</label>
+        <input id="site-search" type="text" placeholder="검색어 입력">
+
+        <!-- title이 있는 iframe -->
+        <iframe src="about:blank" title="매장 안내 지도"></iframe>
+
+        <!-- caption 및 th가 명시된 table -->
+        <table>
+            <caption>2026년 분기별 매출 내역</caption>
+            <thead>
+                <tr><th scope="col">분기</th><th scope="col">매출액</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>1분기</td><td>1,000만원</td></tr>
+            </tbody>
+        </table>
+    </main>
+</body>
+</html>`
         };
 
-        // Active filter state for audit results
-        let currentAuditFilter = 'all';
-        let auditResultsData = [];
+        // Application State
+        let currentTab = 'guide';
+        let guideStandardFilter = 'all';
+        let inspectInputMode = 'folder';
+        let uploadedFilesMap = new Map();
+        let currentInspectionResults = [];
 
-        // Initialize Icons & App on Load
-        window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            loadSampleCode('flawed');
-            updateContrastCalc();
-        });
+        // Global Window Function Bindings (Prevents ReferenceError on Inline Event Handlers)
+        window.switchTab = function(tabId) {
+            currentTab = tabId;
+            ['guide', 'inspector', 'prompts'].forEach(id => {
+                const content = document.getElementById(`tab-content-${id}`);
+                const navBtn = document.getElementById(`nav-${id}`);
+                if (id === tabId) {
+                    content.classList.remove('hidden');
+                    navBtn.className = "tab-btn px-3 sm:px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-brand-600 text-white shadow-md font-semibold";
+                } else {
+                    content.classList.add('hidden');
+                    navBtn.className = "tab-btn px-3 sm:px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2 font-medium";
+                }
+            });
+        };
 
-        // Tab Switching Logic
-        function switchTab(tabName) {
-            // Hide all sections
-            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
-            
-            // Reset Tab Button Styling
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('bg-primary-600', 'text-white');
-                btn.classList.add('text-slate-300');
+        window.setGuideStandard = function(std) {
+            guideStandardFilter = std;
+            ['all', 'wcag', 'kwcag', 'diff'].forEach(s => {
+                const btn = document.getElementById(`std-btn-${s}`);
+                if (s === std) {
+                    btn.className = "std-toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow";
+                } else {
+                    btn.className = "std-toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white";
+                }
             });
 
-            // Active Tab
-            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`tab-${tabName}`);
-            activeBtn.classList.add('bg-primary-600', 'text-white');
-            activeBtn.classList.remove('text-slate-300');
-        }
+            const diffView = document.getElementById('guide-diff-view');
+            const cardsView = document.getElementById('guide-cards-container');
 
-        // Load Sample Code into Textarea
-        function loadSampleCode(key) {
-            const textarea = document.getElementById('code-input');
-            textarea.value = SAMPLE_CODES[key] || '';
-            runCodeAudit();
-        }
+            if (std === 'diff') {
+                diffView.classList.remove('hidden');
+                cardsView.classList.add('hidden');
+            } else {
+                diffView.classList.add('hidden');
+                cardsView.classList.remove('hidden');
+                renderGuideCards();
+            }
+        };
 
-        // ==========================================
-        // 1. HTML ACCESSIBILITY AUDIT ENGINE
-        // ==========================================
-        function runCodeAudit() {
-            const htmlCode = document.getElementById('code-input').value;
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlCode, 'text/html');
-            
-            auditResultsData = [];
+        window.filterGuideItems = function() {
+            if (guideStandardFilter === 'diff') return;
+            renderGuideCards();
+        };
 
-            // Case A: Empty Input
-            if (!htmlCode.trim()) {
-                renderAuditResults([], 100);
+        window.setInspectInputMode = function(mode) {
+            inspectInputMode = mode;
+            ['folder', 'code', 'url'].forEach(m => {
+                const btn = document.getElementById(`mode-btn-${m}`);
+                const div = document.getElementById(`input-mode-${m}`);
+                if (m === mode) {
+                    btn.className = "mode-tab-btn px-4 py-2.5 border-b-2 border-brand-500 text-brand-400 flex items-center gap-2 font-semibold";
+                    div.classList.remove('hidden');
+                } else {
+                    btn.className = "mode-tab-btn px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 font-medium";
+                    div.classList.add('hidden');
+                }
+            });
+        };
+
+        window.loadEditorSample = function(key) {
+            document.getElementById('inspect-code-input').value = DEMO_SAMPLES[key] || '';
+        };
+
+        window.handleFolderSelect = function(e) {
+            const files = Array.from(e.target.files);
+            uploadedFilesMap.clear();
+            files.forEach(file => {
+                uploadedFilesMap.set(file.webkitRelativePath || file.name, file);
+            });
+            const info = document.getElementById('selected-folder-info');
+            info.innerText = `업로드된 파일: ${files.length}개 (준비 완료)`;
+            info.classList.remove('hidden');
+            showToast(`${files.length}개 파일이 성공적으로 감지되었습니다.`);
+        };
+
+        window.toggleSandboxVisibility = function() {
+            const wrapper = document.getElementById('sandbox-wrapper');
+            wrapper.classList.toggle('hidden');
+        };
+
+        window.startFullInspection = async function() {
+            showToast("웹 접근성 정밀 자동 검사를 시작합니다...");
+            const iframe = document.getElementById('inspect-sandbox-iframe');
+            document.getElementById('sandbox-wrapper').classList.remove('hidden');
+
+            if (inspectInputMode === 'folder') {
+                let htmlFile = null;
+                for (let [path, file] of uploadedFilesMap) {
+                    if (path.endsWith('index.html') || path.endsWith('.html')) {
+                        htmlFile = file;
+                        break;
+                    }
+                }
+                if (!htmlFile) {
+                    showToast("폴더 안에서 .html 파일을 찾을 수 없습니다. 에디터 모드로 전환하세요.", "error");
+                    return;
+                }
+                const htmlContent = await htmlFile.text();
+                iframe.srcdoc = htmlContent;
+            } else if (inspectInputMode === 'code') {
+                const code = document.getElementById('inspect-code-input').value;
+                iframe.srcdoc = code;
+            } else if (inspectInputMode === 'url') {
+                const url = document.getElementById('inspect-url-input').value;
+                iframe.src = url;
+            }
+
+            // Wait for iframe to render
+            setTimeout(() => {
+                runSandboxDOMAudit();
+            }, 800);
+        };
+
+        window.filterReportResults = function(filterType) {
+            ['all', 'error', 'warning', 'pass'].forEach(t => {
+                const btn = document.getElementById(`rep-filter-${t}`);
+                if (t === filterType) btn.className = "px-2.5 py-1 rounded bg-brand-600 text-white font-semibold";
+                else btn.className = "px-2.5 py-1 rounded text-slate-400 hover:text-white";
+            });
+            renderReportFindingsList(filterType);
+        };
+
+        window.exportReportJSON = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentInspectionResults, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `a11y_inspection_report_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("리포트 JSON 데이터 다운로드가 완료되었습니다.");
+        };
+
+        window.copyPromptText = function(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const text = el.innerText;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("프롬프트 및 규칙 내용이 클립보드에 복사되었습니다!");
+            } catch (err) {
+                showToast("복사 실패. 직접 텍스트를 드래그해 복사해주세요.", "error");
+            }
+            document.body.removeChild(textarea);
+        };
+
+        // Global Init
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderGuideCards();
+            loadEditorSample('flawed');
+        });
+
+        function renderGuideCards() {
+            const searchKeyword = document.getElementById('guide-search-input').value.toLowerCase().trim();
+            const principleFilter = document.getElementById('guide-principle-select').value;
+            const levelFilter = document.getElementById('guide-level-select').value;
+
+            let masterList = [];
+            if (guideStandardFilter === 'all') masterList = [...WCAG_2_2_DATA, ...KWCAG_2_2_DATA];
+            else if (guideStandardFilter === 'wcag') masterList = WCAG_2_2_DATA;
+            else if (guideStandardFilter === 'kwcag') masterList = KWCAG_2_2_DATA;
+
+            const filtered = masterList.filter(item => {
+                if (principleFilter !== 'all' && item.principle !== principleFilter) return false;
+                if (levelFilter !== 'all' && item.level !== levelFilter) return false;
+                if (searchKeyword) {
+                    const matchText = `${item.id} ${item.title} ${item.desc}`.toLowerCase();
+                    if (!matchText.includes(searchKeyword)) return false;
+                }
+                return true;
+            });
+
+            const container = document.getElementById('guide-cards-container');
+            container.innerHTML = '';
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-12 text-center text-slate-400 text-sm">
+                        검색 조건과 일치하는 접근성 지침이 없습니다.
+                    </div>
+                `;
                 return;
             }
 
-            // --- Check 1: <img> Alternate Text ---
-            const images = doc.querySelectorAll('img');
-            images.forEach((img, idx) => {
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg space-y-2 hover:border-slate-600 transition";
+
+                let stdBadge = item.std === 'wcag' 
+                    ? `<span class="bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">WCAG 2.2</span>`
+                    : `<span class="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">KWCAG 2.2</span>`;
+
+                let newBadge = item.isNew22 ? `<span class="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/30">2.2 신규</span>` : '';
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2">
+                            ${stdBadge}
+                            ${newBadge}
+                            <span class="font-mono text-xs font-bold text-slate-400">${item.id}</span>
+                            <h4 class="font-bold text-white text-base">${escapeHtml(item.title)}</h4>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-700 text-slate-300">Level ${item.level}</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">${escapeHtml(item.desc)}</p>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        function runSandboxDOMAudit() {
+            const iframe = document.getElementById('inspect-sandbox-iframe');
+            let doc = null;
+            try {
+                doc = iframe.contentDocument || iframe.contentWindow.document;
+            } catch (e) {
+                showToast("CORS 제한으로 외부 URL DOM을 읽을 수 없습니다. 폴더 업로드 또는 에디터 모드를 이용해주세요.", "error");
+                return;
+            }
+
+            if (!doc || !doc.body) {
+                showToast("샌드박스 가상 DOM을 생성하는 데 실패했습니다.", "error");
+                return;
+            }
+
+            currentInspectionResults = [];
+
+            // 1. Language
+            const htmlTag = doc.querySelector('html');
+            const lang = htmlTag ? htmlTag.getAttribute('lang') : null;
+            if (!lang || lang.trim() === '') {
+                currentInspectionResults.push({
+                    type: 'error',
+                    ruleId: 'KWCAG-3.1.1 / WCAG-3.1.1',
+                    principle: 'understandable',
+                    title: '기본 언어 속성(lang) 누락',
+                    desc: '<html> 태그에 lang="ko" 등의 주 언어 속성이 작성되어 있지 않아 스크린리더가 올바른 발음 엔진을 선택할 수 없습니다.',
+                    selector: 'html',
+                    beforeCode: '<html>',
+                    afterCode: '<html lang="ko">'
+                });
+            } else {
+                currentInspectionResults.push({
+                    type: 'pass',
+                    ruleId: 'KWCAG-3.1.1 / WCAG-3.1.1',
+                    principle: 'understandable',
+                    title: '기본 언어 속성 명시됨',
+                    desc: `주 언어 속성이 "${lang}"(으)로 올바르게 설정되어 있습니다.`
+                });
+            }
+
+            // 2. Images alt
+            const imgs = doc.querySelectorAll('img');
+            imgs.forEach((img, idx) => {
                 const alt = img.getAttribute('alt');
-                const src = img.getAttribute('src') || `이미지 #${idx+1}`;
-                
+                const src = img.getAttribute('src') || `image_${idx+1}`;
                 if (alt === null) {
-                    auditResultsData.push({
+                    currentInspectionResults.push({
                         type: 'error',
-                        title: '이미지에 대체 텍스트(alt) 누락',
-                        elem: `<img src="${src}">`,
-                        desc: '시각 장애인이 스크린 리더로 인지할 수 없도록 alt 속성이 완전히 빠져 있습니다.',
-                        fix: `alt 속성을 추가하세요. 예: <img src="${src}" alt="제품 설명">`
+                        ruleId: 'KWCAG-1.1.1 / WCAG-1.1.1',
+                        principle: 'perceivable',
+                        title: '이미지 대체 텍스트(alt) 누락',
+                        desc: '시각 장애인이 이미지 의미를 인지할 수 있도록 alt 속성이 필수적입니다.',
+                        selector: `img[src="${src}"]`,
+                        beforeCode: `<img src="${src}">`,
+                        afterCode: `<img src="${src}" alt="이미지에 대한 설명">`
                     });
                 } else if (alt.trim() === '') {
-                    auditResultsData.push({
+                    currentInspectionResults.push({
                         type: 'warning',
-                        title: '빈 대체 텍스트 (alt="") 사용됨',
-                        elem: `<img src="${src}" alt="">`,
-                        desc: '장식용 이미지가 아니라면 의미 있는 정보를 담은 alt 텍스트를 제공해야 합니다.',
-                        fix: '정보성 이미지인 경우 alt에 간단한 설명을 기재하세요.'
+                        ruleId: 'KWCAG-1.1.1 / WCAG-1.1.1',
+                        principle: 'perceivable',
+                        title: '빈 대체 텍스트 (alt="") 지정됨',
+                        desc: '장식용 이미지가 아니라면 스크린리더 사용자를 위한 설명을 포함해야 합니다.',
+                        selector: `img[src="${src}"]`,
+                        beforeCode: `<img src="${src}" alt="">`,
+                        afterCode: `<img src="${src}" alt="상세 설명">`
                     });
                 } else {
-                    auditResultsData.push({
+                    currentInspectionResults.push({
                         type: 'pass',
-                        title: '이미지 대체 텍스트 적절함',
-                        elem: `<img alt="${alt}">`,
-                        desc: `대체 텍스트가 명시되어 있습니다: "${alt}"`
+                        ruleId: 'KWCAG-1.1.1 / WCAG-1.1.1',
+                        principle: 'perceivable',
+                        title: '적절한 이미지 대체 텍스트 제공',
+                        desc: `대체 텍스트: "${alt}"`
                     });
                 }
             });
 
-            // --- Check 2: Form Input Labeling ---
-            const inputs = doc.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), select, textarea');
-            inputs.forEach(input => {
-                const id = input.getAttribute('id');
-                const ariaLabel = input.getAttribute('aria-label');
-                const ariaLabelledBy = input.getAttribute('aria-labelledby');
-                const title = input.getAttribute('title');
-                const type = input.getAttribute('type') || 'text';
-                
-                let hasLabel = false;
-                if (id && doc.querySelector(`label[for="${id}"]`)) hasLabel = true;
-                if (input.closest('label')) hasLabel = true;
-                if (ariaLabel || ariaLabelledBy || title) hasLabel = true;
+            // 3. Computed Style & Focus & Target Size
+            const allElements = doc.querySelectorAll('body *');
+            allElements.forEach(el => {
+                const style = iframe.contentWindow.getComputedStyle(el);
+                if (style.outlineStyle === 'none' && parseFloat(style.outlineWidth) === 0) {
+                    if (['BUTTON', 'A', 'INPUT', 'SELECT'].includes(el.tagName)) {
+                        currentInspectionResults.push({
+                            type: 'warning',
+                            ruleId: 'KWCAG-2.1.2 / WCAG-2.4.7',
+                            principle: 'operable',
+                            title: '키보드 포커스 아웃라인(Focus Ring) 제거됨',
+                            desc: 'outline: none 설정으로 인해 Tab 키 조작 시 현재 포커스 위치를 시각적으로 알아볼 수 없습니다.',
+                            selector: el.tagName.toLowerCase(),
+                            beforeCode: 'button:focus { outline: none; }',
+                            afterCode: 'button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }'
+                        });
+                    }
+                }
 
-                if (!hasLabel) {
-                    auditResultsData.push({
-                        type: 'error',
-                        title: '입력창(Form Input) 레이블 누락',
-                        elem: `<input type="${type}" ${id ? `id="${id}"` : ''}>`,
-                        desc: '스크린 리더가 이 입력창의 목적이 무엇인지 선언할 수 없습니다.',
-                        fix: `<label for="${id || 'input_id'}">레이블 이름</label>을 연결하거나 aria-label="설명"을 부여하세요.`
-                    });
-                } else {
-                    auditResultsData.push({
-                        type: 'pass',
-                        title: '입력창 접근성 레이블 연결됨',
-                        elem: `<input type="${type}">`,
-                        desc: '연결된 label 또는 aria-label이 존재합니다.'
-                    });
+                if (['BUTTON', 'A', 'INPUT'].includes(el.tagName) || el.getAttribute('role') === 'button') {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width > 0 && rect.height > 0 && (rect.width < 24 || rect.height < 24)) {
+                        currentInspectionResults.push({
+                            type: 'error',
+                            ruleId: 'KWCAG-3.3.5 / WCAG-2.5.8',
+                            principle: 'understandable',
+                            title: '대화형 요소 클릭/터치 타깃 크기 미달 (< 24px)',
+                            desc: `현재 렌더링 크기: ${Math.round(rect.width)}x${Math.round(rect.height)}px. 모바일 터치 및 정교한 클릭을 위해 최소 24x24px 이상이어야 합니다.`,
+                            selector: `${el.tagName.toLowerCase()}`,
+                            beforeCode: `<${el.tagName.toLowerCase()} style="width:${Math.round(rect.width)}px;">`,
+                            afterCode: `<${el.tagName.toLowerCase()} style="min-width:24px; min-height:24px; padding:4px;">`
+                        });
+                    }
                 }
             });
 
-            // --- Check 3: Buttons Lacking Accessible Text ---
-            const buttons = doc.querySelectorAll('button, [role="button"]');
-            buttons.forEach(btn => {
-                const text = btn.innerText.trim();
-                const ariaLabel = btn.getAttribute('aria-label');
-                const imgInside = btn.querySelector('img[alt]');
-                
-                if (!text && !ariaLabel && !imgInside) {
-                    auditResultsData.push({
-                        type: 'error',
-                        title: '버튼 텍스트 / 레이블 누락',
-                        elem: btn.outerHTML.substring(0, 60) + '...',
-                        desc: '아이콘만 포함되고 텍스트가 없는 버튼은 스크린 리더 사용자에게 아무 정보도 전달하지 못합니다.',
-                        fix: '버튼 안에 텍스트를 넣거나, aria-label="버튼기능" 속성을 추가하세요.'
-                    });
-                } else {
-                    auditResultsData.push({
-                        type: 'pass',
-                        title: '버튼 식별 텍스트 존재',
-                        elem: `<button>${text || ariaLabel || '아이콘 버튼'}</button>`,
-                        desc: '버튼에 읽을 수 있는 텍스트 또는 aria-label이 포함되어 있습니다.'
-                    });
-                }
-            });
-
-            // --- Check 4: Vague Link Text ---
-            const links = doc.querySelectorAll('a');
-            const vagueTexts = ['여기', '클릭', '여기 클릭', '더보기', '자세히보기', 'more', 'click here'];
-            links.forEach(link => {
-                const text = link.innerText.trim().toLowerCase();
-                const href = link.getAttribute('href');
-
-                if (!href) {
-                    auditResultsData.push({
-                        type: 'warning',
-                        title: 'href 속성이 없는 링크',
-                        elem: `<a>${text || '링크'}</a>`,
-                        desc: 'href 속성이 없으면 키보드 Tab 포커스가 이동하지 않습니다.',
-                        fix: '올바른 URL을 href에 넣거나, 버튼인 경우 <button> 태그로 변경하세요.'
-                    });
-                } else if (vagueTexts.includes(text)) {
-                    auditResultsData.push({
-                        type: 'warning',
-                        title: '모호한 링크 텍스트 사용',
-                        elem: `<a href="${href}">${text}</a>`,
-                        desc: '"여기 클릭", "더보기" 등의 모호한 단어는 맥락을 벗어나면 대상을 파악하기 어렵습니다.',
-                        fix: `목적지를 명확히 기술하세요. 예: "${text}" 대신 "봄 신상품 상세정보 보기"`
-                    });
-                } else if (text.length > 0) {
-                    auditResultsData.push({
-                        type: 'pass',
-                        title: '명확한 링크 목적 기술됨',
-                        elem: `<a href="${href}">${text}</a>`,
-                        desc: '목적지가 구체적인 링크 텍스트입니다.'
-                    });
-                }
-            });
-
-            // --- Check 5: iFrames without Title ---
-            const iframes = doc.querySelectorAll('iframe');
-            iframes.forEach(iframe => {
-                const title = iframe.getAttribute('title');
-                if (!title) {
-                    auditResultsData.push({
-                        type: 'error',
-                        title: 'iframe에 title 속성 누락',
-                        elem: `<iframe src="${iframe.getAttribute('src') || ''}">`,
-                        desc: 'iframe 내부 프레임의 콘텐츠 내용을 요약하는 title 속성이 필요합니다.',
-                        fix: '<iframe title="지도 및 오프라인 매장 위치"> 처럼 title을 명시하세요.'
-                    });
-                }
-            });
-
-            // --- Check 6: Heading Hierarchy ---
+            // 4. Headings Hierarchy
             const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'));
-            let prevLevel = 0;
+            let prevHeadingLevel = 0;
             headings.forEach(h => {
                 const level = parseInt(h.tagName.substring(1));
-                if (prevLevel > 0 && level > prevLevel + 1) {
-                    auditResultsData.push({
+                if (prevHeadingLevel > 0 && level > prevHeadingLevel + 1) {
+                    currentInspectionResults.push({
                         type: 'warning',
-                        title: '제목(Heading) 계층 구조 건너뜀',
-                        elem: `<${h.tagName.toLowerCase()}>${h.innerText.substring(0, 20)}</${h.tagName.toLowerCase()}>`,
-                        desc: `h${prevLevel} 다음에 바로 h${level}(으)로 레벨이 건너뛰어졌습니다. 스크린 리더 사용자의 탐색을 혼란스럽게 만듭니다.`,
-                        fix: `순차적인 헤딩 구조(h1 -> h2 -> h3)를 지켜주세요.`
+                        ruleId: 'KWCAG-2.4.2 / WCAG-1.3.1',
+                        principle: 'operable',
+                        title: '헤딩 순서 계층 구조 건너뜀',
+                        desc: `<h${prevHeadingLevel}> 다음에 바로 <h${level}>Tag로 계층이 건너뛰어졌습니다.`,
+                        selector: h.tagName.toLowerCase(),
+                        beforeCode: `<h${prevHeadingLevel}>...</h${prevHeadingLevel}>\n<h${level}>...</h${level}>`,
+                        afterCode: `<h${prevHeadingLevel}>...</h${prevHeadingLevel}>\n<h${prevHeadingLevel + 1}>...</h${prevHeadingLevel + 1}>`
                     });
                 }
-                prevLevel = level;
+                prevHeadingLevel = level;
             });
 
-            // Calculate Accessibility Score
-            const errors = auditResultsData.filter(i => i.type === 'error').length;
-            const warnings = auditResultsData.filter(i => i.type === 'warning').length;
-            const passes = auditResultsData.filter(i => i.type === 'pass').length;
+            // 5. Data Tables
+            const tables = doc.querySelectorAll('table');
+            tables.forEach(tbl => {
+                const caption = tbl.querySelector('caption');
+                const th = tbl.querySelector('th');
+                if (!caption || !th) {
+                    currentInspectionResults.push({
+                        type: 'error',
+                        ruleId: 'KWCAG-3.3.2 / WCAG-1.3.1',
+                        principle: 'understandable',
+                        title: '데이터 표(Table) 구조화 속성 누락',
+                        desc: '표의 제목을 알리는 <caption> 및 제목 셀 <th>, scope 속성이 빠져 있어 스크린리더가 표 구조를 이해할 수 없습니다.',
+                        selector: 'table',
+                        beforeCode: '<table>\n  <tr><td>데이터</td></tr>\n</table>',
+                        afterCode: '<table>\n  <caption>표 제목</caption>\n  <thead><tr><th scope="col">헤더</th></tr></thead>\n</table>'
+                    });
+                }
+            });
+
+            renderAuditReportOutput();
+        }
+
+        function renderAuditReportOutput() {
+            document.getElementById('report-output-area').classList.remove('hidden');
+
+            const errors = currentInspectionResults.filter(r => r.type === 'error').length;
+            const warnings = currentInspectionResults.filter(r => r.type === 'warning').length;
+            const passes = currentInspectionResults.filter(r => r.type === 'pass').length;
             const total = errors + warnings + passes;
-            
+
             let score = 100;
             if (total > 0) {
                 score = Math.max(0, Math.round(((passes + (warnings * 0.5)) / total) * 100));
             }
 
-            renderAuditResults(auditResultsData, score);
+            document.getElementById('report-score-num').innerText = score;
+            document.getElementById('report-kwcag-rate').innerText = `${score}%`;
+            document.getElementById('report-error-count').innerText = errors;
+            document.getElementById('report-warning-count').innerText = warnings;
+
+            const badge = document.getElementById('report-score-badge');
+            if (score >= 90) {
+                badge.className = "text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 w-max";
+                badge.innerText = "웹 접근성 우수 (WA 마크 충족)";
+            } else if (score >= 70) {
+                badge.className = "text-xs font-bold px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 w-max";
+                badge.innerText = "보완 필요 (개선 권장)";
+            } else {
+                badge.className = "text-xs font-bold px-2.5 py-1 rounded-md bg-red-500/20 text-red-300 w-max";
+                badge.innerText = "접근성 위반 심각 (개선 필수)";
+            }
+
+            renderReportFindingsList('all');
+            showToast("웹 접근성 진단 및 종합 리포트 생성이 완료되었습니다!");
         }
 
-        // Render Results UI
-        function renderAuditResults(items, score) {
-            // Update Summary Stats
-            const scoreVal = document.getElementById('score-val');
-            scoreVal.innerText = `${score}점`;
-            scoreVal.className = `text-2xl font-bold mt-1 ${score >= 80 ? 'text-emerald-600' : score >= 50 ? 'text-amber-600' : 'text-red-600'}`;
+        function renderReportFindingsList(filterType) {
+            const container = document.getElementById('report-findings-list');
+            container.innerHTML = '';
 
-            document.getElementById('error-count').innerText = items.filter(i => i.type === 'error').length;
-            document.getElementById('warning-count').innerText = items.filter(i => i.type === 'warning').length;
-            document.getElementById('pass-count').innerText = items.filter(i => i.type === 'pass').length;
-
-            const resultsContainer = document.getElementById('audit-results-list');
-            resultsContainer.innerHTML = '';
-
-            const filteredItems = items.filter(item => {
-                if (currentAuditFilter === 'all') return true;
-                return item.type === currentAuditFilter;
+            const items = currentInspectionResults.filter(item => {
+                if (filterType === 'all') return true;
+                return item.type === filterType;
             });
 
-            if (filteredItems.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="bg-white p-8 rounded-xl border text-center text-slate-400 text-sm">
-                        진단 항목이 없거나 필터 조건에 일치하는 결과가 없습니다.
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-900/50 p-8 rounded-xl border border-slate-700/50 text-center text-slate-400 text-xs">
+                        선택된 필터 조건의 결과 항목이 없습니다.
                     </div>
                 `;
                 return;
             }
 
-            filteredItems.forEach(item => {
+            items.forEach(item => {
+                const card = document.createElement('div');
                 let badgeStyle = '';
                 let badgeText = '';
-                let borderStyle = '';
 
                 if (item.type === 'error') {
-                    badgeStyle = 'bg-red-100 text-red-800 border-red-200';
-                    badgeText = '오류 (Error)';
-                    borderStyle = 'border-l-4 border-l-red-500';
+                    badgeStyle = 'bg-red-500/20 text-red-400 border-red-500/30';
+                    badgeText = '오류 Error';
                 } else if (item.type === 'warning') {
-                    badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
-                    badgeText = '경고 (Warning)';
-                    borderStyle = 'border-l-4 border-l-amber-500';
+                    badgeStyle = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+                    badgeText = '경고 Warning';
                 } else {
-                    badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                    badgeText = '통과 (Pass)';
-                    borderStyle = 'border-l-4 border-l-emerald-500';
+                    badgeStyle = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                    badgeText = '통과 Pass';
                 }
 
-                const card = document.createElement('div');
-                card.className = `bg-white p-4 rounded-xl border border-slate-200 shadow-sm ${borderStyle} space-y-2 text-xs sm:text-sm`;
+                card.className = "print-card bg-slate-900/80 border border-slate-700/80 rounded-xl p-4 shadow space-y-3";
                 card.innerHTML = `
                     <div class="flex items-center justify-between gap-2">
-                        <span class="font-bold text-slate-900">${escapeHtml(item.title)}</span>
-                        <span class="px-2 py-0.5 rounded-md border font-semibold text-[11px] ${badgeStyle}">${badgeText}</span>
-                    </div>
-                    <p class="text-slate-600">${escapeHtml(item.desc)}</p>
-                    <div class="bg-slate-900 text-slate-200 p-2.5 rounded-lg font-mono text-xs overflow-x-auto">
-                        <code>${escapeHtml(item.elem)}</code>
-                    </div>
-                    ${item.fix ? `
-                        <div class="bg-blue-50 text-blue-900 p-2.5 rounded-lg text-xs flex items-start gap-1.5 border border-blue-100">
-                            <i data-lucide="wrench" class="w-4 h-4 text-blue-600 shrink-0 mt-0.5"></i>
-                            <div><strong>개선 방법:</strong> ${escapeHtml(item.fix)}</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-bold text-brand-400">${item.ruleId}</span>
+                            <h4 class="font-bold text-white text-sm">${escapeHtml(item.title)}</h4>
                         </div>
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded border ${badgeStyle}">${badgeText}</span>
+                    </div>
+                    <p class="text-xs text-slate-300">${escapeHtml(item.desc)}</p>
+                    
+                    ${item.beforeCode ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs font-mono">
+                        <div class="bg-slate-950 p-2.5 rounded-lg border border-red-900/40 text-red-300">
+                            <span class="text-[10px] text-red-400 block font-sans font-bold mb-1">❌ 수정 전 코드 (Before):</span>
+                            <pre class="whitespace-pre-wrap">${escapeHtml(item.beforeCode)}</pre>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded-lg border border-emerald-900/40 text-emerald-300">
+                            <span class="text-[10px] text-emerald-400 block font-sans font-bold mb-1">✅ 접근성 수정 후 추천 코드 (After):</span>
+                            <pre class="whitespace-pre-wrap">${escapeHtml(item.afterCode)}</pre>
+                        </div>
+                    </div>
                     ` : ''}
                 `;
-                resultsContainer.appendChild(card);
+                container.appendChild(card);
             });
 
             lucide.createIcons();
         }
 
-        function filterAuditResults(type) {
-            currentAuditFilter = type;
-            // Update Filter Buttons Style
-            ['all', 'error', 'warning', 'pass'].forEach(t => {
-                const btn = document.getElementById(`filter-btn-${t}`);
-                if (t === type) {
-                    btn.className = 'px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium';
-                } else {
-                    btn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 font-medium';
-                }
-            });
-            runCodeAudit();
-        }
-
-
-        // ==========================================
-        // 2. COLOR CONTRAST CALCULATOR ENGINE
-        // ==========================================
-        function updateContrastCalc() {
-            const fgColor = document.getElementById('fg-color-picker').value;
-            const bgColor = document.getElementById('bg-color-picker').value;
-
-            document.getElementById('fg-hex-display').innerText = fgColor.toUpperCase();
-            document.getElementById('fg-hex-input').value = fgColor.toUpperCase();
-            document.getElementById('bg-hex-display').innerText = bgColor.toUpperCase();
-            document.getElementById('bg-hex-input').value = bgColor.toUpperCase();
-
-            // Calculate Contrast Ratio
-            const ratio = getContrastRatio(fgColor, bgColor);
-            const ratioText = `${ratio.toFixed(2)} : 1`;
-            document.getElementById('contrast-ratio-text').innerText = ratioText;
-
-            // Live Preview Card Styles
-            const previewBox = document.getElementById('contrast-preview-box');
-            previewBox.style.backgroundColor = bgColor;
-            previewBox.style.color = fgColor;
-
-            // WCAG Evaluation Badges
-            // AA Normal: 4.5:1 | AA Large: 3.0:1
-            // AAA Normal: 7.0:1 | AAA Large: 4.5:1
-            const aaNormal = ratio >= 4.5;
-            const aaLarge = ratio >= 3.0;
-            const aaaNormal = ratio >= 7.0;
-            const aaaLarge = ratio >= 4.5;
-
-            updateBadge('badge-aa-normal', aaNormal);
-            updateBadge('badge-aa-large', aaLarge);
-            updateBadge('badge-aaa-normal', aaaNormal);
-            updateBadge('badge-aaa-large', aaaLarge);
-
-            // Verdict overall badge
-            const verdictBadge = document.getElementById('ratio-verdict-badge');
-            if (aaaNormal) {
-                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1.5";
-                verdictBadge.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5"></i> <span>매우 우수 (AAA 통과)</span>`;
-            } else if (aaNormal) {
-                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-blue-100 text-blue-800 flex items-center gap-1.5";
-                verdictBadge.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> <span>양호 (AA 통과)</span>`;
-            } else if (aaLarge) {
-                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-amber-100 text-amber-800 flex items-center gap-1.5";
-                verdictBadge.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i> <span>주의 (큰 글자만 통과)</span>`;
-            } else {
-                verdictBadge.className = "px-4 py-2 rounded-xl text-sm font-bold bg-red-100 text-red-800 flex items-center gap-1.5";
-                verdictBadge.innerHTML = `<i data-lucide="x-circle" class="w-5 h-5"></i> <span>대비 부족 (부적합)</span>`;
-            }
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl shadow-xl border text-xs sm:text-sm font-medium transition-all duration-300 transform translate-y-2 pointer-events-auto flex items-center gap-2 ${
+                type === 'error' 
+                ? 'bg-red-950/90 border-red-700 text-red-200' 
+                : 'bg-slate-900/90 border-brand-500 text-slate-100'
+            }`;
+            toast.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-triangle' : 'check-circle-2'}" class="w-4 h-4 text-brand-400"></i> <span>${escapeHtml(msg)}</span>`;
+            container.appendChild(toast);
             lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        function updateBadge(elementId, isPass) {
-            const el = document.getElementById(elementId);
-            if (isPass) {
-                el.innerText = 'PASS';
-                el.className = 'px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700';
-            } else {
-                el.innerText = 'FAIL';
-                el.className = 'px-2 py-0.5 rounded font-bold bg-red-100 text-red-700';
-            }
-        }
-
-        function syncColorInput(type, hexVal) {
-            if (/^#[0-9A-F]{6}$/i.test(hexVal)) {
-                if (type === 'fg') {
-                    document.getElementById('fg-color-picker').value = hexVal;
-                } else {
-                    document.getElementById('bg-color-picker').value = hexVal;
-                }
-                updateContrastCalc();
-            }
-        }
-
-        function swapColors() {
-            const fg = document.getElementById('fg-color-picker').value;
-            const bg = document.getElementById('bg-color-picker').value;
-            document.getElementById('fg-color-picker').value = bg;
-            document.getElementById('bg-color-picker').value = fg;
-            updateContrastCalc();
-        }
-
-        function applyColorPreset(fg, bg) {
-            document.getElementById('fg-color-picker').value = fg;
-            document.getElementById('bg-color-picker').value = bg;
-            updateContrastCalc();
-        }
-
-        // Relative Luminance Math for WCAG 2.1
-        function getLuminance(hex) {
-            const rgb = hexToRgb(hex);
-            const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(v => {
-                v /= 255;
-                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-            });
-            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        }
-
-        function getContrastRatio(hex1, hex2) {
-            const lum1 = getLuminance(hex1);
-            const lum2 = getLuminance(hex2);
-            const bright = Math.max(lum1, lum2);
-            const dark = Math.min(lum1, lum2);
-            return (bright + 0.05) / (dark + 0.05);
-        }
-
-        function hexToRgb(hex) {
-            let cleanHex = hex.replace('#', '');
-            if (cleanHex.length === 3) {
-                cleanHex = cleanHex.split('').map(c => c + c).join('');
-            }
-            const num = parseInt(cleanHex, 16);
-            return {
-                r: (num >> 16) & 255,
-                g: (num >> 8) & 255,
-                b: num & 255
-            };
-        }
-
-
-        // ==========================================
-        // 3. VISION SIMULATOR & CHECKLIST ENGINE
-        // ==========================================
-        function applyVisionFilter(filterName) {
-            const container = document.getElementById('simulated-ui-target');
-            container.className = "transition-all duration-300 bg-white p-5 rounded-xl border shadow-sm space-y-4";
-            if (filterName !== 'none') {
-                container.classList.add(`filter-${filterName}`);
-            }
-        }
-
-        function updateChecklistProgress() {
-            const checkboxes = document.querySelectorAll('.chk-item');
-            const checkedCount = document.querySelectorAll('.chk-item:checked').length;
-            const total = checkboxes.length;
-            const percentage = Math.round((checkedCount / total) * 100);
-
-            const progressText = document.getElementById('chk-progress-text');
-            progressText.innerText = `${checkedCount} / ${total} 완료 (${percentage}%)`;
-            
-            if (percentage === 100) {
-                progressText.className = "text-emerald-600 font-bold";
-            } else {
-                progressText.className = "text-primary-600 font-bold";
-            }
-        }
-
-        // Helper Utility to escape HTML strings safely
         function escapeHtml(str) {
             if (!str) return '';
             return str
